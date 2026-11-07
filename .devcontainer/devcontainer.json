@@ -1,0 +1,49 @@
+// Περιβάλλον ανάπτυξης για GitHub Codespaces / VS Code Dev Containers.
+// Περιέχει: JDK 21, Maven 3.9, Apache Tomcat 11 και τα απαραίτητα VS Code extensions.
+{
+  "name": "Java Web (JDK 21, Maven, Tomcat 11)",
+
+  // Επίσημο image της Microsoft με JDK 21 (Debian)
+  "image": "mcr.microsoft.com/devcontainers/java:1-21-bookworm",
+
+  "features": {
+    // Το JDK υπάρχει ήδη στο image ("version": "none"), εδώ προσθέτουμε μόνο το Maven
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "none",
+      "installMaven": "true",
+      "mavenVersion": "3.9.11"
+    }
+  },
+
+  // Ο Tomcat εγκαθίσταται στο /home/vscode/tomcat (βλ. post-create.sh)
+  "containerEnv": {
+    "CATALINA_HOME": "/home/vscode/tomcat"
+  },
+
+  // Εγκατάσταση Tomcat + προ-λήψη των Maven dependencies (τρέχει μία φορά, όταν δημιουργείται το container)
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+
+  // Η θύρα 8080 (Jetty ή Tomcat) προωθείται αυτόματα στον browser
+  "forwardPorts": [8080],
+  "portsAttributes": {
+    "8080": {
+      "label": "Web app (Jetty / Tomcat)",
+      "onAutoForward": "notify"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",                 // Java: language support, debugger, Maven, tests
+        "redhat.vscode-xml",                        // pom.xml, web.xml
+        "redhat.vscode-community-server-connector", // Tomcat μέσα από το VS Code
+        "bierner.markdown-mermaid"                  // διαγράμματα Mermaid στο preview των .md
+      ],
+      "settings": {
+        "java.configuration.updateBuildConfiguration": "automatic",
+        "files.encoding": "utf8"
+      }
+    }
+  }
+}
