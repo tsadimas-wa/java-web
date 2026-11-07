@@ -3,8 +3,11 @@
 Οδηγός για φοιτητές: πρώτα μια σύντομη εισαγωγή στο **Apache Maven** και μετά, βήμα‑βήμα,
 η δημιουργία, το build και η εκτέλεση μιας Java web εφαρμογής (Servlets/JSP).
 
+> Συνέχεια: [Forms.md](Forms.md): φόρμες με Servlets και JSP.
+
 ## Περιεχόμενα
 
+- [Γρήγορη εκκίνηση με GitHub Codespaces](#γρήγορη-εκκίνηση-με-github-codespaces)
 - [Μέρος Α: Εισαγωγή στο Maven](#μέρος-α-εισαγωγή-στο-maven)
   - [1. Τι είναι το Maven](#1-τι-είναι-το-maven)
   - [2. Εγκατάσταση](#2-εγκατάσταση)
@@ -27,6 +30,49 @@
   - [Βήμα 9: Εκτέλεση σε Apache Tomcat](#βήμα-9-εκτέλεση-σε-apache-tomcat)
 - [Συχνά προβλήματα](#συχνά-προβλήματα)
 - [Ασκήσεις](#ασκήσεις)
+
+---
+
+# Γρήγορη εκκίνηση με GitHub Codespaces
+
+Αν δεν θέλετε (ή δεν μπορείτε) να εγκαταστήσετε τίποτα στον υπολογιστή σας, το repository έχει έτοιμο
+**dev container** (φάκελος [.devcontainer/](.devcontainer/)). Ανοίγει ένα πλήρες περιβάλλον ανάπτυξης μέσα στον browser,
+με όλα τα εργαλεία ήδη εγκατεστημένα:
+
+| Εργαλείο              | Έκδοση / Θέση                                     |
+|-----------------------|---------------------------------------------------|
+| JDK                   | 21                                                |
+| Maven                 | 3.9.11 (`mvn`)                                    |
+| Apache Tomcat         | 11 στο `$CATALINA_HOME` (= `/home/vscode/tomcat`) |
+| VS Code extensions    | Java Extension Pack, XML, Community Server Connectors (Tomcat), Mermaid preview |
+
+**Άνοιγμα:**
+
+1. Στη σελίδα του repository στο GitHub: πράσινο κουμπί **Code → καρτέλα Codespaces → Create codespace on main**.
+2. Την πρώτη φορά η δημιουργία παίρνει μερικά λεπτά (κατεβαίνει το image, ο Tomcat και οι Maven dependencies).
+   Την πρόοδο τη βλέπετε στο τερματικό (*View creation log*).
+3. Ανοίγει ένα VS Code στον browser, με τερματικό (**Ctrl+`**) όπου δουλεύουν κανονικά όλες οι εντολές του οδηγού.
+
+**Εκτέλεση της εφαρμογής:**
+
+```bash
+cd webapp1
+mvn jetty:run                     # ή:
+mvn clean package && cp target/webapp1.war $CATALINA_HOME/webapps/ && $CATALINA_HOME/bin/catalina.sh run
+```
+
+Όταν ο server ξεκινήσει στη θύρα 8080, το Codespaces εμφανίζει ειδοποίηση **«Open in Browser»**. Η εφαρμογή ανοίγει
+σε διεύθυνση της μορφής `https://<όνομα-codespace>-8080.app.github.dev/`. Προσθέστε στο τέλος το context path:
+**`/webapp1/`**. Όλες τις προωθημένες θύρες τις βλέπετε στην καρτέλα **Ports** (δίπλα στο *Terminal*).
+
+Όπου ο οδηγός γράφει `http://localhost:8080/...`, στο Codespaces χρησιμοποιήστε τη διεύθυνση από την καρτέλα *Ports*.
+
+> **Σημειώσεις**
+> - Το Codespaces έχει περιορισμένες δωρεάν ώρες χρήσης το μήνα. Οι φοιτητές παίρνουν περισσότερες μέσω του
+>   [GitHub Education](https://education.github.com). Σταματήστε το codespace όταν δεν το χρησιμοποιείτε
+>   (σταματάει και μόνο του μετά από λίγη ώρα αδράνειας).
+> - Το ίδιο περιβάλλον ανοίγει και **τοπικά**, αν έχετε Docker: VS Code + extension **Dev Containers** →
+>   *Reopen in Container*.
 
 ---
 

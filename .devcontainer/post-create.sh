@@ -23,7 +23,11 @@ chmod +x "$TOMCAT_LINK"/bin/*.sh
 # ---- 2. Προ-λήψη Maven dependencies & plugins (για να είναι γρήγορο το πρώτο build) ----
 if [ -f webapp1/pom.xml ]; then
   echo ">> Λήψη Maven dependencies για το webapp1"
-  mvn -B -q -f webapp1/pom.xml dependency:go-offline || echo "!! Η προ-λήψη απέτυχε (δεν πειράζει, θα γίνει στο πρώτο build)"
+  # go-offline: plugins (π.χ. Jetty) και dependencies.
+  # package: ένα πραγματικό build, γιατί κάποια πράγματα (π.χ. ο JUnit provider του surefire)
+  #          κατεβαίνουν μόνο όταν τρέξουν τα tests. Το clean στο τέλος σβήνει το target/.
+  mvn -B -q -f webapp1/pom.xml dependency:go-offline package clean \
+    || echo "!! Η προ-λήψη απέτυχε (δεν πειράζει, θα γίνει στο πρώτο build)"
 fi
 
 echo
