@@ -1,0 +1,56 @@
+# ---- Maven ----
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+# Το Maven Wrapper jar κατεβαίνει αυτόματα (το mvnw και το .mvn/wrapper/maven-wrapper.properties ΜΠΑΙΝΟΥΝ στο git)
+.mvn/wrapper/maven-wrapper.jar
+
+# ---- Java ----
+*.class
+*.log
+hs_err_pid*
+replay_pid*
+
+# ---- Servers (logs/temp από Jetty/Tomcat) ----
+logs/
+work/
+temp/
+
+# ---- IntelliJ IDEA ----
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+# ---- Eclipse ----
+.classpath
+.project
+.settings/
+.factorypath
+bin/
+
+# ---- NetBeans ----
+nbproject/private/
+nbbuild/
+nbdist/
+nb-configuration.xml
+nbactions.xml
+
+# ---- VS Code ----
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# ---- Λειτουργικά συστήματα ----
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+*.swp
