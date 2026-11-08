@@ -395,6 +395,48 @@ flowchart LR
 > Τα διαγράμματα είναι σε [Mermaid](https://mermaid.js.org). Σχεδιάζονται αυτόματα στο GitHub/GitLab.
 > Στο VS Code χρειάζεται το extension *Markdown Preview Mermaid Support*.
 
+#### Δείτε το «build plan» του δικού σας project
+
+Το σχήμα δείχνει τα **προκαθορισμένα** bindings για ένα `war` project. Για να δείτε **ακριβώς** τι θα εκτελεστεί στο
+**δικό σας** project (με όποια plugins έχετε προσθέσει στο `pom.xml` και με τις ενδιάμεσες phases), υπάρχει το
+plugin [buildplan-maven-plugin](https://github.com/jcgay/buildplan-maven-plugin). Τρέξτε το μέσα στον φάκελο του project:
+
+```bash
+mvn fr.jcgay.maven.plugins:buildplan-maven-plugin:list-phase -Dbuildplan.tasks=deploy
+```
+
+```
+Build Plan for webapp1 Maven Webapp:
+process-resources ---------------------------------------------------
+    + maven-resources-plugin | default-resources     | resources
+compile -------------------------------------------------------------
+    + maven-compiler-plugin  | default-compile       | compile
+process-test-resources ----------------------------------------------
+    + maven-resources-plugin | default-testResources | testResources
+test-compile --------------------------------------------------------
+    + maven-compiler-plugin  | default-testCompile   | testCompile
+test ----------------------------------------------------------------
+    + maven-surefire-plugin  | default-test          | test
+package -------------------------------------------------------------
+    + maven-war-plugin       | default-war           | war
+install -------------------------------------------------------------
+    + maven-install-plugin   | default-install       | install
+deploy --------------------------------------------------------------
+    + maven-deploy-plugin    | default-deploy        | deploy
+```
+
+- Το `-Dbuildplan.tasks=` λέει **για ποιες phases** θέλουμε το πλάνο, π.χ. `-Dbuildplan.tasks=clean,package` για το
+  `mvn clean package`. Αν το παραλείψετε, το plugin τυπώνει **κενό** πλάνο.
+- Το plugin **δεν εκτελεί τίποτα**: δεν κάνει compile, ούτε tests, ούτε πακετάρισμα. Μόνο δείχνει τι **θα** γινόταν.
+- Παραλλαγές: το goal `list` δίνει το ίδιο σε μορφή πίνακα (plugin | phase | goal) και το `list-plugin` το ομαδοποιεί ανά plugin.
+- Το γράφουμε με το πλήρες όνομα (`groupId:artifactId:goal`), γιατί δεν είναι επίσημο plugin του Maven
+  (δείτε «Η γενική μορφή της εντολής `mvn`» στην ενότητα 8).
+
+> ⚠ **Μη γράψετε `mvn deploy fr.jcgay...:list-phase`.** Το `deploy` εκεί είναι **phase**, οπότε το Maven θα
+> **εκτελέσει πρώτα** όλο το lifecycle μέχρι το deploy: compile, tests, `.war`, install στο `~/.m2`, και στο τέλος θα αποτύχει
+> στο deploy, γιατί δεν έχουμε ορίσει απομακρυσμένο repository. Οι phases για τις οποίες θέλουμε το πλάνο δίνονται
+> **μόνο** με το `-Dbuildplan.tasks`.
+
 ### Plugins και goals
 
 Στην πραγματικότητα το Maven μόνο του δεν «ξέρει» να κάνει compile. Όλη η δουλειά γίνεται από **plugins**.
@@ -558,6 +600,7 @@ mvn  -q  -DskipTests  clean  package  dependency:tree
 | `mvn package -DskipTests`            | build χωρίς να τρέξουν τα tests                                      |
 | `mvn test -Dtest=HelloServletTest`   | εκτέλεση μόνο ενός test class                                        |
 | `mvn dependency:tree`                | δέντρο όλων των dependencies (και των transitive)                    |
+| `mvn fr.jcgay.maven.plugins:buildplan-maven-plugin:list-phase -Dbuildplan.tasks=deploy` | ποια goals θα εκτελεστούν σε κάθε phase (χωρίς να εκτελεστεί τίποτα, βλ. ενότητα 5) |
 | `mvn help:effective-pom`             | το «πλήρες» POM με όλα τα defaults που εφαρμόζονται                  |
 | `mvn versions:display-dependency-updates` | ποιες dependencies έχουν νεότερη έκδοση                         |
 
