@@ -1,0 +1,21 @@
+<%@ page pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%-- ctx = το context path της εφαρμογής, π.χ. "/webapp1". Το χρησιμοποιούμε σε ΟΛΑ τα links, src και action. --%>
+<c:set var="ctx" value="${pageContext.request.contextPath}"/>
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><c:out value="${pageTitle}"/> · webapp1</title>
+  <link rel="stylesheet" href="${ctx}/css/style.css">
+</head>
+<body>
+<header class="site-header">
+  <a class="brand" href="${ctx}/">webapp1</a>
+  <nav>
+    <a href="${ctx}/students/new">Νέος φοιτητής</a>
+    <a href="${ctx}/students">Φοιτητές</a>
+  </nav>
+</header>
+<main>

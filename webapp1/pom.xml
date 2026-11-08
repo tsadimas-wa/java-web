@@ -24,6 +24,25 @@
       <scope>provided</scope>
     </dependency>
 
+    <!-- JSTL: βιβλιοθήκη tags για τις JSP σελίδες (<c:if>, <c:forEach>, <c:out>, ...) -->
+    <dependency>
+      <groupId>jakarta.servlet.jsp.jstl</groupId>
+      <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+      <version>3.0.2</version>
+      <exclusions>
+        <!-- το Expression Language (EL) το παρέχει ήδη ο server -->
+        <exclusion>
+          <groupId>jakarta.el</groupId>
+          <artifactId>jakarta.el-api</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.web</groupId>
+      <artifactId>jakarta.servlet.jsp.jstl</artifactId>
+      <version>3.0.1</version>
+    </dependency>
+
     <!-- JUnit 5 για unit tests -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>

@@ -5,6 +5,11 @@
                              https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
          version="6.0">
   <display-name>webapp1</display-name>
+
+  <!-- Τα δεδομένα των φορμών (και οι απαντήσεις) είναι σε UTF-8, ώστε να δουλεύουν τα ελληνικά -->
+  <request-character-encoding>UTF-8</request-character-encoding>
+  <response-character-encoding>UTF-8</response-character-encoding>
+
   <welcome-file-list>
     <welcome-file>index.jsp</welcome-file>
   </welcome-file-list>
