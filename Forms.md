@@ -10,23 +10,22 @@
 
 > **Προαπαιτούμενα:** Έχετε ολοκληρώσει το [README.md](README.md) (Μέρος Β), δηλαδή έχετε το project `webapp1`
 > που τρέχει με `mvn jetty:run` ή σε Tomcat 10.1+/11.
-
 ## Περιεχόμενα
 
 - [0. Τι θα φτιάξουμε](#0-τι-θα-φτιάξουμε)
-- [1. Βήμα 1: Ρύθμιση του project: pom.xml και web.xml](#1-βήμα-1-ρύθμιση-του-project-pomxml-και-webxml)
+- [1. Ρύθμιση του project: pom.xml και web.xml](#1-ρύθμιση-του-project-pomxml-και-webxml)
 - [2. Εισαγωγή στις JSP](#2-εισαγωγή-στις-jsp)
-- [3. Βήμα 2: Το model: η κλάση Student](#3-βήμα-2-το-model-η-κλάση-student)
-- [4. Βήμα 3: Αποθήκευση στη μνήμη](#4-βήμα-3-αποθήκευση-στη-μνήμη)
-- [5. Βήμα 4: Στατικά αρχεία και CSS](#5-βήμα-4-στατικά-αρχεία-και-css)
-- [6. Βήμα 5: Κοινό header και footer](#6-βήμα-5-κοινό-header-και-footer)
-- [7. Βήμα 6: Πώς δουλεύει μια HTML φόρμα](#7-βήμα-6-πώς-δουλεύει-μια-html-φόρμα)
-- [8. Βήμα 7: Το Servlet της φόρμας](#8-βήμα-7-το-servlet-της-φόρμας)
-- [9. Βήμα 8: Η JSP της φόρμας](#9-βήμα-8-η-jsp-της-φόρμας)
-- [10. Βήμα 9: Η σελίδα του φοιτητή](#10-βήμα-9-η-σελίδα-του-φοιτητή)
-- [11. Βήμα 10: Η λίστα φοιτητών](#11-βήμα-10-η-λίστα-φοιτητών)
-- [12. Βήμα 11: Η αρχική σελίδα](#12-βήμα-11-η-αρχική-σελίδα)
-- [13. Βήμα 12: Εκτέλεση και δοκιμές](#13-βήμα-12-εκτέλεση-και-δοκιμές)
+- [3. Το model: η κλάση Student](#3-το-model-η-κλάση-student)
+- [4. Αποθήκευση στη μνήμη](#4-αποθήκευση-στη-μνήμη)
+- [5. Στατικά αρχεία και CSS](#5-στατικά-αρχεία-και-css)
+- [6. Κοινό header και footer](#6-κοινό-header-και-footer)
+- [7. Η αρχική σελίδα](#7-η-αρχική-σελίδα)
+- [8. Πώς δουλεύει μια HTML φόρμα](#8-πώς-δουλεύει-μια-html-φόρμα)
+- [9. Το Servlet της φόρμας](#9-το-servlet-της-φόρμας)
+- [10. Η JSP της φόρμας](#10-η-jsp-της-φόρμας)
+- [11. Η σελίδα του φοιτητή](#11-η-σελίδα-του-φοιτητή)
+- [12. Η λίστα φοιτητών](#12-η-λίστα-φοιτητών)
+- [13. Εκτέλεση και δοκιμές](#13-εκτέλεση-και-δοκιμές)
 - [14. Σύνοψη: parameters, attributes, forward, redirect](#14-σύνοψη-parameters-attributes-forward-redirect)
 - [Συχνά προβλήματα](#συχνά-προβλήματα)
 - [Ασκήσεις](#ασκήσεις)
@@ -75,7 +74,7 @@ webapp1/
 
 ---
 
-## 1. Βήμα 1: Ρύθμιση του project: `pom.xml` και `web.xml`
+## 1. Ρύθμιση του project: `pom.xml` και `web.xml`
 
 Ξεκινάμε από το project `webapp1` του README και αλλάζουμε δύο αρχεία ρυθμίσεων. Σε σχέση με το README
 **προστίθενται** μόνο:
@@ -415,7 +414,7 @@ ${fn:escapeXml(student.firstName)}                             <%-- ασφαλή
 
 ---
 
-## 3. Βήμα 2: Το model: η κλάση `Student`
+## 3. Το model: η κλάση `Student`
 
 `src/main/java/gr/uniwa/ice/webapp1/model/Student.java`:
 
@@ -467,7 +466,9 @@ public class Student {
 Το `${student.firstName}` δεν διαβάζει το πεδίο `firstName`. Καλεί τη μέθοδο **`getFirstName()`**. Αν λείπει ο getter,
 η JSP βγάζει σφάλμα `PropertyNotFoundException`.
 
-## 4. Βήμα 3: Αποθήκευση στη μνήμη
+---
+
+## 4. Αποθήκευση στη μνήμη
 
 `src/main/java/gr/uniwa/ice/webapp1/repository/StudentRepository.java`:
 
@@ -532,7 +533,7 @@ public class StudentRepository {
 
 ---
 
-## 5. Βήμα 4: Στατικά αρχεία και CSS
+## 5. Στατικά αρχεία και CSS
 
 ### 5.1 Πού μπαίνουν τα αρχεία: `webapp` vs `resources` vs `WEB-INF`
 
@@ -719,7 +720,9 @@ th, td {
 
 > **Δεν βλέπετε τις αλλαγές στο CSS;** Ο browser κρατάει τα CSS στην cache. Κάντε **Ctrl+F5** (ή Ctrl+Shift+R).
 
-## 6. Βήμα 5: Κοινό header και footer
+---
+
+## 6. Κοινό header και footer
 
 Όλες οι σελίδες έχουν το ίδιο `<head>` (με το CSS), την ίδια μπάρα πλοήγησης και το ίδιο footer. Αντί να τα
 αντιγράφουμε, τα βάζουμε σε δύο αρχεία **`.jspf`** (*JSP fragment*: κομμάτι σελίδας, όχι ολόκληρη σελίδα).
@@ -774,7 +777,32 @@ th, td {
 
 ---
 
-## 7. Βήμα 6: Πώς δουλεύει μια HTML φόρμα
+## 7. Η αρχική σελίδα
+
+Αντικαταστήστε το `src/main/webapp/index.jsp` (το «Hello World!» του archetype):
+
+```jsp
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<c:set var="pageTitle" value="Αρχική"/>
+<%@ include file="/WEB-INF/jsp/header.jspf" %>
+
+<h1>Καλώς ήρθατε</h1>
+<p>Σήμερα είναι <strong><%= java.time.LocalDate.now() %></strong>.</p>
+<p>
+  <a class="button" href="${ctx}/students/new">Νέος φοιτητής</a>
+  <a href="${ctx}/students">Δείτε όλους τους φοιτητές</a>
+</p>
+
+<%@ include file="/WEB-INF/jsp/footer.jspf" %>
+```
+
+Το `<%= java.time.LocalDate.now() %>` είναι **έκφραση scriptlet**: εκτελεί Java και τυπώνει το αποτέλεσμα. Το βάλαμε για να δείτε
+πώς μοιάζει. Σε πραγματικό κώδικα, τέτοιες τιμές τις ετοιμάζει το Servlet και η JSP τις δείχνει με `${...}`.
+
+---
+
+## 8. Πώς δουλεύει μια HTML φόρμα
 
 Πριν γράψουμε κώδικα, ας δούμε τι κάνει ο browser με μια φόρμα:
 
@@ -829,7 +857,7 @@ URL-encoded (`%CE%9C` = «Μ» σε UTF-8). Ο server τα αποκωδικοπ�
 
 ---
 
-## 8. Βήμα 7: Το Servlet της φόρμας
+## 9. Το Servlet της φόρμας
 
 Ένα Servlet για ένα URL (`/students/new`) με **δύο** μεθόδους:
 
@@ -984,7 +1012,9 @@ sequenceDiagram
 
 > Στο redirect χρησιμοποιούμε `req.getContextPath()` (= `/webapp1`) για τον ίδιο λόγο που το χρησιμοποιούμε και στα links του HTML.
 
-## 9. Βήμα 8: Η JSP της φόρμας
+---
+
+## 10. Η JSP της φόρμας
 
 `src/main/webapp/WEB-INF/jsp/student-form.jsp`:
 
@@ -1077,7 +1107,9 @@ sequenceDiagram
   - Η φόρμα στέλνει στο **ίδιο** URL από το οποίο φορτώθηκε (`/students/new`), αλλά με `POST`, οπότε αυτή τη φορά
     θα κληθεί η `doPost` του Servlet και όχι η `doGet`.
 
-## 10. Βήμα 9: Η σελίδα του φοιτητή
+---
+
+## 11. Η σελίδα του φοιτητή
 
 Το Servlet παίρνει το `id` από το URL (`/students/view?id=1`), βρίσκει τον φοιτητή και τον δίνει στη JSP.
 
@@ -1162,7 +1194,9 @@ public class StudentViewServlet extends HttpServlet {
   (`...&saved=1`), ώστε το πράσινο μήνυμα «αποθηκεύτηκε» να εμφανίζεται μόνο αμέσως μετά την αποθήκευση.
 - Ό,τι έγραψε ο χρήστης τυπώνεται με `<c:out>`. Το `id` και το `semester` είναι αριθμοί, οπότε αρκεί το `${...}`.
 
-## 11. Βήμα 10: Η λίστα φοιτητών
+---
+
+## 12. Η λίστα φοιτητών
 
 `src/main/java/gr/uniwa/ice/webapp1/web/StudentListServlet.java`:
 
@@ -1231,32 +1265,9 @@ public class StudentListServlet extends HttpServlet {
 
 Το `<c:forEach var="st" items="${students}">` είναι το αντίστοιχο του `for (Student st : students)` της Java.
 
-## 12. Βήμα 11: Η αρχική σελίδα
-
-Αντικαταστήστε το `src/main/webapp/index.jsp` (το «Hello World!» του archetype):
-
-```jsp
-<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
-<c:set var="pageTitle" value="Αρχική"/>
-<%@ include file="/WEB-INF/jsp/header.jspf" %>
-
-<h1>Καλώς ήρθατε</h1>
-<p>Σήμερα είναι <strong><%= java.time.LocalDate.now() %></strong>.</p>
-<p>
-  <a class="button" href="${ctx}/students/new">Νέος φοιτητής</a>
-  <a href="${ctx}/students">Δείτε όλους τους φοιτητές</a>
-</p>
-
-<%@ include file="/WEB-INF/jsp/footer.jspf" %>
-```
-
-Το `<%= java.time.LocalDate.now() %>` είναι **έκφραση scriptlet**: εκτελεί Java και τυπώνει το αποτέλεσμα. Το βάλαμε για να δείτε
-πώς μοιάζει. Σε πραγματικό κώδικα, τέτοιες τιμές τις ετοιμάζει το Servlet και η JSP τις δείχνει με `${...}`.
-
 ---
 
-## 13. Βήμα 12: Εκτέλεση και δοκιμές
+## 13. Εκτέλεση και δοκιμές
 
 ```bash
 mvn clean package
@@ -1284,6 +1295,8 @@ mvn jetty:run
 7. **View Source** (Ctrl+U): δείτε ότι στον browser φτάνει **μόνο HTML**. Δεν φαίνεται ούτε JSP, ούτε EL, ούτε JSTL.
 8. **Απευθείας JSP:** ανοίξτε `http://localhost:8080/webapp1/WEB-INF/jsp/student-form.jsp` → 404.
 9. **Μνήμη:** σταματήστε και ξαναξεκινήστε τον server. Οι φοιτητές χάθηκαν.
+
+---
 
 ## 14. Σύνοψη: parameters, attributes, forward, redirect
 

@@ -20,6 +20,7 @@
   - [8. Βασικές εντολές (cheat sheet)](#8-βασικές-εντολές-cheat-sheet)
   - [9. Archetypes](#9-archetypes)
 - [Μέρος Β: Δημιουργία Java Web Application](#μέρος-β-δημιουργία-java-web-application)
+  - [Πριν ξεκινήσουμε: πώς λειτουργεί μια web εφαρμογή](#πριν-ξεκινήσουμε-πώς-λειτουργεί-μια-web-εφαρμογή)
   - [Βήμα 1: Δημιουργία project από archetype](#βήμα-1-δημιουργία-project-από-archetype)
   - [Βήμα 2: Τι δημιουργήθηκε](#βήμα-2-τι-δημιουργήθηκε)
   - [Βήμα 3: Εκσυγχρονισμός του pom.xml](#βήμα-3-εκσυγχρονισμός-του-pomxml)
@@ -31,6 +32,7 @@
   - [Jetty ή Tomcat;](#jetty-ή-tomcat)
   - [Βήμα 9: Εκτέλεση σε Apache Tomcat](#βήμα-9-εκτέλεση-σε-apache-tomcat)
 - [Συχνά προβλήματα](#συχνά-προβλήματα)
+- [Σύνοψη](#σύνοψη)
 - [Ασκήσεις](#ασκήσεις)
 
 ---
@@ -69,10 +71,17 @@ mvn clean package && cp target/webapp1.war $CATALINA_HOME/webapps/ && $CATALINA_
 
 Όπου ο οδηγός γράφει `http://localhost:8080/...`, στο Codespaces χρησιμοποιήστε τη διεύθυνση από την καρτέλα *Ports*.
 
+> ⚠ **Ο φάκελος `webapp1/` του repository είναι το τελικό αποτέλεσμα** και των δύο οδηγών (αυτού και του [Forms.md](Forms.md)).
+> Γι' αυτό η εφαρμογή που θα δείτε έχει ήδη τη φόρμα φοιτητών και όχι το «Hello World!». Αν θέλετε να ακολουθήσετε τα βήματα
+> **από την αρχή**, δουλέψτε σε δικό σας φάκελο, έξω από το repository, ώστε να μη συγκρουστεί με τον υπάρχοντα `webapp1/`:
+> ```bash
+> mkdir -p ~/work && cd ~/work      # και από εδώ συνεχίστε με το Μέρος Β, Βήμα 1
+> ```
+
 ### Χρήστης για τον Tomcat Manager στο Codespaces
 
 Ο Tomcat του codespace είναι εγκατεστημένος στο `/home/vscode/tomcat` (= `$CATALINA_HOME`), **έξω** από τον φάκελο του project,
-οπότε δεν φαίνεται στο Explorer. Για να ορίσετε χρήστη για το Manager UI (εξηγείται αναλυτικά στην [ενότητα 9.7](#97-deploy-από-τον-browser-tomcat-manager)):
+οπότε δεν φαίνεται στο Explorer. Για να ορίσετε χρήστη για το Manager UI (εξηγείται αναλυτικά στο [Βήμα 9.7](#97-deploy-από-τον-browser-tomcat-manager)):
 
 1. Σταματήστε τον Tomcat αν τρέχει (Ctrl+C στο τερματικό του `catalina.sh run`).
 2. Ανοίξτε το αρχείο στον editor του VS Code από το τερματικό:
@@ -101,7 +110,7 @@ mvn clean package && cp target/webapp1.war $CATALINA_HOME/webapps/ && $CATALINA_
 > - Αν μετά τη σύνδεση εμφανιστεί **403 Access Denied**, ελέγξτε πρώτα ότι ο ρόλος είναι γραμμένος σωστά (`manager-gui`).
 >   Αν είναι σωστός, το πρόβλημα είναι ο περιορισμός του Manager σε συνδέσεις από `localhost`
 >   (`$CATALINA_HOME/webapps/manager/META-INF/context.xml`, `RemoteCIDRValve`). Σε αυτή την περίπτωση χρησιμοποιήστε για deploy
->   την αντιγραφή του `.war` στο `webapps/` (ενότητα 9.4), που δεν χρειάζεται τον Manager.
+>   την αντιγραφή του `.war` στο `webapps/` (Βήμα 9.4), που δεν χρειάζεται τον Manager.
 
 > **Σημειώσεις**
 > - Το Codespaces έχει περιορισμένες δωρεάν ώρες χρήσης το μήνα. Οι φοιτητές παίρνουν περισσότερες μέσω του
@@ -120,7 +129,9 @@ mvn clean package && cp target/webapp1.war $CATALINA_HOME/webapps/ && $CATALINA_
 Αντί να κατεβάζουμε χειροκίνητα `.jar` αρχεία και να γράφουμε scripts για compile/test/πακετάρισμα,
 περιγράφουμε το project σε ένα αρχείο (`pom.xml`) και το Maven:
 
-- **κατεβάζει αυτόματα** τις βιβλιοθήκες (dependencies) που χρειαζόμαστε, μαζί με τις δικές τους εξαρτήσεις (transitive dependencies),
+- **κατεβάζει αυτόματα** τις βιβλιοθήκες (dependencies) που χρειαζόμαστε, μαζί με τις δικές τους εξαρτήσεις.
+  Αυτές λέγονται **transitive dependencies**: αν εμείς χρειαζόμαστε τη βιβλιοθήκη Α και η Α χρειάζεται τη Β,
+  το Maven φέρνει αυτόματα και τη Β,
 - **κάνει compile** τον κώδικα,
 - **τρέχει τα tests**,
 - **πακετάρει** το αποτέλεσμα (`.jar`, `.war`, …),
@@ -146,7 +157,39 @@ mvn clean package && cp target/webapp1.war $CATALINA_HOME/webapps/ && $CATALINA_
    mvn -v
    ```
    Η έξοδος δείχνει την έκδοση του Maven **και** ποιο JDK χρησιμοποιεί. Αν δείχνει λάθος JDK,
-   ρυθμίστε τη μεταβλητή `JAVA_HOME`.
+   ρυθμίστε τη μεταβλητή `JAVA_HOME` (βλ. παρακάτω).
+
+### Μεταβλητές περιβάλλοντος: `PATH` και `JAVA_HOME`
+
+- **`PATH`**: η λίστα φακέλων στους οποίους το τερματικό ψάχνει προγράμματα. Όταν γράφετε `mvn`, το τερματικό ψάχνει
+  ένα αρχείο `mvn` σε αυτούς τους φακέλους. Αν πάρετε `mvn: command not found` (ή `'mvn' is not recognized` στα Windows),
+  ο φάκελος `bin` του Maven δεν είναι στο `PATH`.
+- **`JAVA_HOME`**: ο φάκελος όπου είναι εγκατεστημένο το JDK (ο **κύριος** φάκελος, **όχι** ο `bin`). Τον χρησιμοποιούν
+  το Maven και ο Tomcat για να βρουν ποια Java θα τρέξουν.
+
+**Linux / macOS:** προσθέστε στο τέλος του `~/.bashrc` (ή του `~/.zshrc`, αν το shell σας είναι zsh, όπως by default στο macOS):
+
+```bash
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk          # Linux: δείτε τι υπάρχει με  ls /usr/lib/jvm
+# export JAVA_HOME=$(/usr/libexec/java_home -v 21)     # macOS: αυτή η γραμμή αντί για την από πάνω
+export PATH="$JAVA_HOME/bin:$HOME/opt/apache-maven-3.9.11/bin:$PATH"   # προσαρμόστε τον φάκελο του Maven
+```
+
+Οι αλλαγές ισχύουν σε **νέα** τερματικά. Για το τρέχον τερματικό: `source ~/.bashrc` (ή `source ~/.zshrc`).
+
+**Windows:** Έναρξη → αναζήτηση «*environment variables*» → **Edit environment variables for your account**:
+
+1. **New…** → Variable name: `JAVA_HOME`, Variable value: ο φάκελος του JDK, π.χ. `C:\Program Files\Eclipse Adoptium\jdk-21.0.8.9-hotspot`.
+2. Επιλέξτε τη μεταβλητή **Path** → **Edit…** → **New** και προσθέστε δύο γραμμές:
+   `%JAVA_HOME%\bin` και τον φάκελο `bin` του Maven, π.χ. `C:\tools\apache-maven-3.9.11\bin`.
+3. **OK** σε όλα τα παράθυρα και ανοίξτε **νέο** τερματικό.
+
+**Έλεγχος** (σε νέο τερματικό):
+
+```bash
+echo $JAVA_HOME        # Linux/macOS      (PowerShell: echo $env:JAVA_HOME)
+mvn -v                 # πρέπει να δείχνει το σωστό JDK στη γραμμή "Java version"
+```
 
 > **Σημείωση:** Τα IntelliJ IDEA, Eclipse, NetBeans και VS Code (με το *Extension Pack for Java*)
 > αναγνωρίζουν απευθείας Maven projects: απλώς ανοίγετε τον φάκελο που περιέχει το `pom.xml`.
@@ -215,6 +258,10 @@ my-project/
 > Ο φάκελος `target/` δημιουργείται αυτόματα και **δεν** μπαίνει στο git (προσθέστε τον στο `.gitignore`).
 > Το `mvn clean` τον διαγράφει.
 
+> **Classpath** λέγεται το σύνολο των φακέλων και των `.jar` στους οποίους η Java ψάχνει κλάσεις και αρχεία (*resources*)
+> όταν τρέχει ένα πρόγραμμα. Το Maven φτιάχνει το classpath αυτόματα: τα compiled αρχεία του `src/main/java`, τα αρχεία
+> του `src/main/resources` και τα `.jar` των dependencies.
+
 ## 5. Lifecycle, phases, plugins και goals
 
 Αυτές είναι οι τέσσερις πιο σημαντικές έννοιες του Maven.
@@ -266,8 +313,8 @@ classDiagram
 
 - Ένα **lifecycle** αποτελείται από μία ή περισσότερες **phases**, σε συγκεκριμένη σειρά.
 - Ένα **plugin** περιέχει ένα ή περισσότερα **goals**. Κάθε goal ανήκει σε ακριβώς ένα plugin.
-- Μια **phase** μπορεί να έχει κανένα, ένα ή πολλά δεμένα **goals** (η `validate` δεν έχει κανένα,
-  η `test` έχει τρία). Ένα goal μπορεί να μην είναι δεμένο πουθενά (π.χ. το `dependency:tree`) και να το
+- Μια **phase** μπορεί να έχει κανένα, ένα ή πολλά δεμένα **goals** (π.χ. η `validate` δεν έχει κανένα).
+  Ένα goal μπορεί να μην είναι δεμένο πουθενά (π.χ. το `dependency:tree`) και να το
   καλούμε μόνο απευθείας.
 
 Και σε (ψευδο)κώδικα Java, αυτό που κάνει το Maven όταν γράφουμε `mvn package`:
@@ -399,7 +446,8 @@ flowchart LR
 
 Το σχήμα δείχνει τα **προκαθορισμένα** bindings για ένα `war` project. Για να δείτε **ακριβώς** τι θα εκτελεστεί στο
 **δικό σας** project (με όποια plugins έχετε προσθέσει στο `pom.xml` και με τις ενδιάμεσες phases), υπάρχει το
-plugin [buildplan-maven-plugin](https://github.com/jcgay/buildplan-maven-plugin). Τρέξτε το μέσα στον φάκελο του project:
+plugin [buildplan-maven-plugin](https://github.com/jcgay/buildplan-maven-plugin). Τρέξτε το μέσα στον φάκελο ενός project
+(δηλαδή εκεί όπου υπάρχει `pom.xml`). Αν δεν έχετε ακόμα project, δοκιμάστε το αφού φτιάξετε το `webapp1` στο Μέρος Β:
 
 ```bash
 mvn fr.jcgay.maven.plugins:buildplan-maven-plugin:list-phase -Dbuildplan.tasks=deploy
@@ -430,7 +478,7 @@ deploy --------------------------------------------------------------
 - Το plugin **δεν εκτελεί τίποτα**: δεν κάνει compile, ούτε tests, ούτε πακετάρισμα. Μόνο δείχνει τι **θα** γινόταν.
 - Παραλλαγές: το goal `list` δίνει το ίδιο σε μορφή πίνακα (plugin | phase | goal) και το `list-plugin` το ομαδοποιεί ανά plugin.
 - Το γράφουμε με το πλήρες όνομα (`groupId:artifactId:goal`), γιατί δεν είναι επίσημο plugin του Maven
-  (δείτε «Η γενική μορφή της εντολής `mvn`» στην ενότητα 8).
+  (δείτε «Η γενική μορφή της εντολής `mvn`» στην ενότητα 8 του Μέρους Α).
 
 > ⚠ **Μη γράψετε `mvn deploy fr.jcgay...:list-phase`.** Το `deploy` εκεί είναι **phase**, οπότε το Maven θα
 > **εκτελέσει πρώτα** όλο το lifecycle μέχρι το deploy: compile, tests, `.war`, install στο `~/.m2`, και στο τέλος θα αποτύχει
@@ -443,9 +491,12 @@ deploy --------------------------------------------------------------
 Κάθε plugin έχει ένα ή περισσότερα **goals** (συγκεκριμένες εργασίες). Για παράδειγμα, το `maven-compiler-plugin`
 έχει τα goals `compile` και `testCompile`. Το συμβολίζουμε με τη μορφή `plugin:goal`, π.χ. `compiler:compile`.
 
-Κάθε phase είναι «δεμένη» (*bound*) με κάποια goals. Όταν εκτελείται η phase, εκτελούνται αυτά τα goals:
+Κάθε phase είναι «δεμένη» (*bound*) με κάποια goals. Όταν εκτελείται η phase, εκτελούνται αυτά τα goals.
+Ο πίνακας είναι **απλοποιημένος**, όπως και το διάγραμμα: δείχνει μόνο τις κύριες phases, και σε κάθε μία τα goals
+που τρέχουν **μέχρι** αυτήν. Στην πραγματικότητα, π.χ. το `compiler:testCompile` είναι δεμένο στην ενδιάμεση phase
+`test-compile` και στη `test` είναι δεμένο μόνο το `surefire:test`. Αυτό ακριβώς δείχνει η έξοδος του buildplan παραπάνω.
 
-| Phase      | Plugin:goal που εκτελείται (για `jar`/`war`)                                    |
+| Κύρια phase | Plugin:goal που εκτελούνται μέχρι αυτήν (για `jar`/`war`)                       |
 |------------|---------------------------------------------------------------------------------|
 | `clean`    | `clean:clean`                                                                   |
 | `compile`  | `resources:resources` (αντιγραφή του `src/main/resources`), `compiler:compile`  |
@@ -647,7 +698,72 @@ mvn archetype:generate \
 > Tomcat 10.1+/11 ή Jetty 12. Παλιότερα tutorials χρησιμοποιούν `javax.servlet.*` — αυτά
 > **δεν** δουλεύουν σε Tomcat 10+.
 
+## Πριν ξεκινήσουμε: πώς λειτουργεί μια web εφαρμογή
+
+Όταν ανοίγετε μια σελίδα, ο **browser** στέλνει ένα **HTTP request** σε έναν **server**, και ο server απαντά με ένα
+**HTTP response**: έναν κωδικό κατάστασης (π.χ. `200 OK`) και ένα περιεχόμενο, συνήθως HTML.
+
+Σε μια Java web εφαρμογή, τα requests τα δέχεται ένας **servlet container**, όπως ο **Tomcat** ή ο **Jetty**. Είναι ένα πρόγραμμα
+Java που ακούει σε μια θύρα (εδώ 8080) και μοιράζει κάθε request στον σωστό κώδικα:
+
+- **Servlet:** μια κλάση Java που κληρονομεί την `HttpServlet` και απαντά σε ένα συγκεκριμένο URL. Ο container καλεί τη
+  μέθοδο **`doGet`** για requests τύπου GET (π.χ. όταν ανοίγουμε ένα link) και τη **`doPost`** για POST (π.χ. υποβολή φόρμας).
+  Η μέθοδος παίρνει δύο αντικείμενα:
+  - **`HttpServletRequest req`**: ό,τι έστειλε ο browser. Π.χ. το `req.getParameter("name")` επιστρέφει την τιμή της παραμέτρου `name`.
+  - **`HttpServletResponse resp`**: εκεί γράφουμε την απάντηση, π.χ. με `resp.getWriter().println(...)`.
+- **JSP:** μια σελίδα HTML με λίγα δυναμικά κομμάτια, που ο container τη μετατρέπει αυτόματα σε Servlet.
+  Θα τις δούμε αναλυτικά στο [Forms.md](Forms.md).
+
+**Η ανατομία ενός URL.** Ας δούμε τι σημαίνει κάθε κομμάτι του URL που θα χρησιμοποιήσουμε:
+
+```
+http://localhost:8080/webapp1/hello?name=Μαρία
+└──┬──┘└───┬───┘└─┬─┘└──┬───┘└─┬──┘└────┬────┘
+   │       │      │     │      │        └────── query string: παράμετροι, ζευγάρια όνομα=τιμή (χωρισμένα με &)
+   │       │      │     │      └─────────────── servlet path: ποιο Servlet (το ορίζει το @WebServlet("/hello"))
+   │       │      │     └────────────────────── context path: ποια εφαρμογή (ένας server μπορεί να έχει πολλές)
+   │       │      └──────────────────────────── θύρα (port) στην οποία ακούει ο server
+   │       └─────────────────────────────────── host: localhost = ο δικός σας υπολογιστής
+   └─────────────────────────────────────────── πρωτόκολλο
+```
+
+```mermaid
+sequenceDiagram
+    participant B as Browser
+    participant C as Tomcat / Jetty<br/>(servlet container)
+    participant S as HelloServlet<br/>(εφαρμογή webapp1)
+    B->>C: GET /webapp1/hello?name=Μαρία
+    Note over C: /webapp1 → ποια εφαρμογή<br/>/hello → ποιο Servlet
+    C->>S: doGet(req, resp)
+    Note over S: req.getParameter("name") → "Μαρία"<br/>γράφει HTML στο resp
+    S-->>C: (επιστρέφει)
+    C-->>B: 200 OK + HTML «Γεια σου, Μαρία!»
+```
+
+**Κωδικοί κατάστασης HTTP** που θα συναντήσετε (τους βλέπετε στα Developer Tools του browser, F12 → *Network*):
+
+| Κωδικός | Σημασία | Πότε θα τον δείτε εδώ |
+|---------|---------|-----------------------|
+| **200** OK | όλα καλά | η σελίδα φόρτωσε κανονικά |
+| **302** Found | «πήγαινε αλλού» (redirect) | μετά την αποθήκευση μιας φόρμας ([Forms.md](Forms.md)) |
+| **400** Bad Request | το request είναι λανθασμένο | π.χ. μη κωδικοποιημένοι χαρακτήρες στο URL |
+| **401** Unauthorized | χρειάζεται username/password | Tomcat Manager χωρίς σύνδεση |
+| **403** Forbidden | συνδεθήκατε, αλλά δεν έχετε δικαίωμα | Tomcat Manager με χρήστη χωρίς τον σωστό ρόλο |
+| **404** Not Found | δεν υπάρχει τίποτα σε αυτό το URL | λάθος URL ή context path, ή η εφαρμογή δεν έγινε deploy |
+| **405** Method Not Allowed | το URL υπάρχει, αλλά όχι για αυτή τη μέθοδο | POST σε Servlet που έχει μόνο `doGet` |
+| **500** Internal Server Error | ο **δικός μας κώδικας** πέταξε exception | δείτε το stack trace στο τερματικό ή στα logs |
+
 ## Βήμα 1: Δημιουργία project από archetype
+
+**Πού τρέχετε την εντολή:** σε έναν φάκελο εργασίας που **δεν** είναι ήδη Maven project, δηλαδή δεν περιέχει `pom.xml`.
+Το Maven θα δημιουργήσει **μέσα του** έναν νέο φάκελο `webapp1/`. Για παράδειγμα:
+
+```bash
+mkdir -p ~/java-web && cd ~/java-web          # Windows (PowerShell): mkdir $HOME\java-web; cd $HOME\java-web
+```
+
+> Αν ο φάκελος `webapp1` υπάρχει ήδη (π.χ. τρέχετε την εντολή μέσα στο repository του μαθήματος, που έχει ήδη έτοιμο `webapp1/`),
+> το Maven σταματά με `A Maven project already exists in the directory .../webapp1`. Πηγαίνετε σε άλλο φάκελο ή δώστε άλλο `artifactId`.
 
 Σε Linux/macOS:
 
@@ -675,13 +791,20 @@ mvn archetype:generate "-DgroupId=gr.uniwa.ice" "-DartifactId=webapp1" "-Darchet
 | `-DgroupId=gr.uniwa.ice`                     | το groupId του νέου project                               |
 | `-DartifactId=webapp1`                       | το όνομα του project — και του φακέλου που θα δημιουργηθεί |
 | `-DarchetypeArtifactId=maven-archetype-webapp` | ποιο πρότυπο να χρησιμοποιηθεί                           |
-| `-DarchetypeVersion=1.5`                     | ποια **έκδοση** του προτύπου. **Μην την παραλείψετε**: χωρίς αυτήν το Maven παίρνει την πολύ παλιά 1.0 (βλ. ενότητα 9) |
+| `-DarchetypeVersion=1.5`                     | ποια **έκδοση** του προτύπου. **Μην την παραλείψετε**: χωρίς αυτήν το Maven παίρνει την πολύ παλιά 1.0 (βλ. Μέρος Α, ενότητα 9 «Archetypes») |
 | `-DinteractiveMode=false`                    | να μη ρωτήσει τίποτα, να χρησιμοποιήσει defaults          |
 
 Η πρώτη εκτέλεση αργεί λίγο γιατί κατεβαίνουν plugins στο `~/.m2`. Στο τέλος πρέπει να δείτε `BUILD SUCCESS`.
 
+Μπείτε στον νέο φάκελο και δείτε τι περιέχει. **Όλες οι επόμενες εντολές `mvn` τρέχουν από εδώ**, δηλαδή από τον φάκελο που έχει το `pom.xml`:
+
 ```bash
 cd webapp1
+ls -A            # Windows (PowerShell): dir -Force
+```
+
+```
+.mvn  pom.xml  src
 ```
 
 ## Βήμα 2: Τι δημιουργήθηκε
@@ -799,6 +922,11 @@ webapp1/
 
 > Αν έχετε JDK 17, αλλάξτε το `maven.compiler.release` σε `17`.
 
+> **Και το `<pluginManagement>` του archetype;** Στο Βήμα 2 είπαμε ότι το κλείδωμα εκδόσεων είναι καλή πρακτική.
+> Εδώ, για να μείνει το `pom.xml` μικρό και ευανάγνωστο, κλειδώνουμε μόνο τα plugins που μας ενδιαφέρουν άμεσα
+> (compiler, surefire, war, Jetty). Για τα υπόλοιπα (clean, resources, install, deploy) χρησιμοποιείται η έκδοση που
+> ορίζει η έκδοση του Maven που έχετε. Σε ένα πραγματικό project θα τα κλειδώνατε όλα.
+
 ### Τι σημαίνει το `<scope>`
 
 Κάθε `<dependency>` μπορεί να έχει ένα **`<scope>`**. Το scope λέει στο Maven **σε ποιες φάσεις χρειάζεται η βιβλιοθήκη**
@@ -858,7 +986,15 @@ webapp1/
 > που χρησιμοποιούμε (Tomcat 10.1+/11, Jetty 12) είναι **Jakarta EE** (`jakarta.*`), οπότε δηλώνουμε την αντίστοιχη έκδοση,
 > 6.0, με το νέο namespace `https://jakarta.ee/xml/ns/jakartaee`. Ακόμα παλιότερα αρχεία `web.xml` (π.χ. το 2.3 της
 > έκδοσης 1.0 του archetype) είναι χειρότερα: ο server **απενεργοποιεί** σύγχρονες δυνατότητες, όπως τα annotations
-> `@WebServlet` και το Expression Language (`${...}`) στα JSP.
+> `@WebServlet` (υποστηρίζονται από την έκδοση 3.0 και μετά) και το Expression Language (`${...}`) στα JSP.
+
+Τι κάνει κάθε στοιχείο:
+
+- `<display-name>`: ένα όνομα για την εφαρμογή (φαίνεται π.χ. στον Tomcat Manager).
+- `<welcome-file-list>`: ποιο αρχείο εμφανίζεται όταν ζητηθεί σκέτος φάκελος. Γι' αυτό το `http://localhost:8080/webapp1/`
+  (χωρίς όνομα αρχείου) δείχνει το `index.jsp`.
+- **Δεν** δηλώνουμε εδώ τα Servlets. Παλιότερα κάθε Servlet έπρεπε να δηλωθεί στο `web.xml` με `<servlet>` και
+  `<servlet-mapping>`. Σήμερα αρκεί το annotation `@WebServlet` πάνω στην κλάση (Βήμα 5).
 
 ## Βήμα 5: Το πρώτο Servlet
 
@@ -868,6 +1004,16 @@ webapp1/
 mkdir -p src/main/java/gr/uniwa/ice/webapp1
 mkdir -p src/test/java/gr/uniwa/ice/webapp1
 ```
+
+Στα Windows (PowerShell), το `mkdir` φτιάχνει και τους ενδιάμεσους φακέλους μόνο του:
+
+```powershell
+mkdir src\main\java\gr\uniwa\ice\webapp1
+mkdir src\test\java\gr\uniwa\ice\webapp1
+```
+
+> **Package = φάκελος.** Η πρώτη γραμμή κάθε αρχείου (`package gr.uniwa.ice.webapp1;`) πρέπει να αντιστοιχεί **ακριβώς** στον φάκελο
+> όπου βρίσκεται το αρχείο (`gr/uniwa/ice/webapp1/`). Αν διαφέρουν, το compile αποτυγχάνει.
 
 Αρχείο `src/main/java/gr/uniwa/ice/webapp1/HelloServlet.java`:
 
@@ -908,6 +1054,21 @@ public class HelloServlet extends HttpServlet {
 }
 ```
 
+Τι κάνει ο κώδικας:
+
+- **`@WebServlet("/hello")`**: annotation που λέει στον server «αυτή η κλάση απαντά στο URL `/hello`» μέσα στο context path της
+  εφαρμογής, δηλαδή στο `/webapp1/hello`. Ο server βρίσκει τις κλάσεις με `@WebServlet` αυτόματα κατά την εκκίνηση.
+- **`extends HttpServlet`**: κληρονομούμε από την κλάση του Servlet API, που ξέρει να διαβάζει HTTP requests.
+- **`doGet(req, resp)`**: καλείται για κάθε **GET** request στο `/hello`. Κάνουμε `@Override` μόνο στις μεθόδους που μας χρειάζονται.
+  Αν έρθει POST και δεν έχουμε `doPost`, ο server απαντά αυτόματα **405**.
+- **`req.getParameter("name")`**: η τιμή της παραμέτρου `name` από το query string (`?name=Μαρία`). Επιστρέφει πάντα `String`,
+  ή `null` αν η παράμετρος δεν στάλθηκε. Γι' αυτό ελέγχουμε για `null`.
+- **`resp.setContentType("text/html; charset=UTF-8")`**: λέμε στον browser ότι στέλνουμε HTML σε UTF-8, ώστε να εμφανίσει σωστά τα ελληνικά.
+  Πρέπει να γίνει **πριν** από το `getWriter()`.
+- **`resp.getWriter()`**: ένας `PrintWriter`. Ό,τι γράφουμε εκεί φτάνει στον browser.
+- **`escape(...)`**: αντικαθιστά τα `<`, `>`, `&`, ώστε αν κάποιος δώσει ως όνομα `<script>...</script>`, να εμφανιστεί ως κείμενο και
+  να μην εκτελεστεί (*Cross-Site Scripting*, XSS).
+
 ## Βήμα 6: Ένα unit test
 
 Αρχείο `src/test/java/gr/uniwa/ice/webapp1/HelloServletTest.java`:
@@ -931,6 +1092,7 @@ class HelloServletTest {
 
 ```
 webapp1/
+├── .mvn/                      (από το archetype, τα αφήνουμε)
 ├── pom.xml
 └── src/
     ├── main/
@@ -965,6 +1127,20 @@ META-INF/...
 Παρατηρήστε ότι το Servlet API **δεν** υπάρχει μέσα στο `.war` (λόγω `provided`),
 ούτε το JUnit (λόγω `test`). Αν προσθέσετε dependencies με scope `compile`, θα εμφανιστούν στο `WEB-INF/lib/`.
 
+**Τι είναι το `.war`:** (*Web ARchive*) ένα αρχείο **zip** με συγκεκριμένη δομή, που καταλαβαίνει κάθε servlet container:
+
+| Μέσα στο `.war` | Από πού προέρχεται | Τι είναι |
+|-----------------|--------------------|----------|
+| `index.jsp`, `css/`, … (ρίζα) | `src/main/webapp/` | σελίδες και στατικά αρχεία, **προσβάσιμα** από τον browser |
+| `WEB-INF/` | `src/main/webapp/WEB-INF/` | **μη προσβάσιμος** φάκελος από τον browser: ό,τι είναι εδώ το βλέπει μόνο ο server |
+| `WEB-INF/web.xml` | `src/main/webapp/WEB-INF/web.xml` | οι ρυθμίσεις της εφαρμογής |
+| `WEB-INF/classes/` | compile του `src/main/java/` (+ `src/main/resources/`) | οι κλάσεις μας |
+| `WEB-INF/lib/` | dependencies με scope `compile`/`runtime` | τα `.jar` των βιβλιοθηκών |
+| `META-INF/` | Maven | πληροφορίες για το πακέτο (π.χ. αντίγραφο του `pom.xml`) |
+
+Επειδή είναι zip, μπορείτε να το ανοίξετε και με οποιοδήποτε πρόγραμμα αποσυμπίεσης. Η εντολή `jar` υπάρχει σε κάθε JDK
+(Linux, macOS και Windows).
+
 ## Βήμα 8: Εκτέλεση με Jetty
 
 Ο πιο γρήγορος τρόπος για ανάπτυξη — δεν χρειάζεται να εγκαταστήσετε server:
@@ -980,6 +1156,16 @@ mvn jetty:run
 - <http://localhost:8080/webapp1/hello?name=Μαρία> → «Γεια σου, Μαρία!»
 
 Τερματισμός με **Ctrl+C**.
+
+**Αλλαγές ενώ τρέχει:** αλλαγές σε `index.jsp` (και γενικά σε JSP, HTML, CSS) φαίνονται με απλό refresh του browser, μέσα σε λίγα
+δευτερόλεπτα. Αλλαγές σε **κώδικα Java** χρειάζονται Ctrl+C και ξανά `mvn jetty:run` (ή αυτόματο reload, δείτε το tip στο «Jetty ή Tomcat;»).
+
+> **Ελληνικά σε JSP:** το `index.jsp` του archetype δεν δηλώνει κωδικοποίηση, οπότε ο server διαβάζει το αρχείο ως ISO‑8859‑1.
+> Αν γράψετε μέσα του ελληνικά, θα εμφανιστούν «σκουπίδια», π.χ. `ÎÎ±Î»Î·Î¼Î­ÏÎ±` αντί για «Καλημέρα».
+> Προσθέστε ως **πρώτη γραμμή** του αρχείου:
+> ```jsp
+> <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+> ```
 
 > Αν η θύρα 8080 είναι πιασμένη: `mvn jetty:run -Djetty.http.port=9090`
 
@@ -1009,7 +1195,7 @@ open source και δωρεάν. Ο Jetty αναπτύσσεται από το E
 | Αλλαγή σε κώδικα Java        | Ctrl+C και ξανά `mvn jetty:run` (ή αυτόματα, βλ. παρακάτω)             | νέο `mvn package` και αντιγραφή του `.war` (αυτόματο redeploy) |
 | Πόσες εφαρμογές              | μία: το project που τρέχουμε                                          | **πολλές** ταυτόχρονα, μία ανά `.war`                          |
 | Ρυθμίσεις                    | στο `pom.xml` (`<configuration>` του plugin)                           | αρχεία στο `conf/` (`server.xml`, `tomcat-users.xml`, …)       |
-| Διαχείριση από browser       | όχι                                                                    | ναι, Tomcat Manager (9.7)                                      |
+| Διαχείριση από browser       | όχι                                                                    | ναι, Tomcat Manager (Βήμα 9.7)                                      |
 | Logs                         | στο τερματικό                                                          | στο τερματικό (`catalina.sh run`) ή στον φάκελο `logs/`        |
 
 ### Ποιον να χρησιμοποιήσω;
@@ -1071,20 +1257,22 @@ open source και δωρεάν. Ο Jetty αναπτύσσεται από το E
    ├── work/      ← προσωρινά αρχεία (π.χ. τα JSP μεταγλωττισμένα σε Java)
    └── temp/
    ```
-4. Ο Tomcat χρειάζεται να βρει τη Java: πρέπει να είναι ορισμένο το **`JAVA_HOME`** (ή το `JRE_HOME`).
-   Για ευκολία ορίστε και το `CATALINA_HOME`:
+4. Ο Tomcat χρειάζεται να βρει τη Java: πρέπει να είναι ορισμένο το **`JAVA_HOME`** (ή το `JRE_HOME`). Αν δεν το έχετε ήδη
+   ορίσει, δείτε τη [ρύθμιση στο Μέρος Α](#μεταβλητές-περιβάλλοντος-path-και-java_home).
+   Για ευκολία ορίστε και το **`CATALINA_HOME`** (τον φάκελο του Tomcat), ώστε οι εντολές του οδηγού να δουλεύουν όπως είναι.
+   **Προσαρμόστε την έκδοση** στο όνομα του φακέλου που προέκυψε από την αποσυμπίεση:
 
-   Linux/macOS (π.χ. στο `~/.bashrc` ή `~/.zshrc`):
+   Linux/macOS (στο τέλος του `~/.bashrc` ή του `~/.zshrc`):
    ```bash
-   export JAVA_HOME=/usr/lib/jvm/java-21-openjdk     # προσαρμόστε στο σύστημά σας
    export CATALINA_HOME=~/opt/apache-tomcat-11.0.27
    ```
+   και μετά `source ~/.bashrc` (ή `source ~/.zshrc`), ή ανοίξτε νέο τερματικό.
+
    Windows (PowerShell, μόνιμα για τον χρήστη):
    ```powershell
-   setx JAVA_HOME "C:\Program Files\Eclipse Adoptium\jdk-21"
    setx CATALINA_HOME "C:\tools\apache-tomcat-11.0.27"
    ```
-   (ανοίξτε νέο τερματικό μετά το `setx`).
+   και ανοίξτε **νέο** τερματικό (το `setx` δεν επηρεάζει το τρέχον).
 
    > Αν έχετε αποσυμπιέσει **zip** σε Linux/macOS, δώστε δικαίωμα εκτέλεσης στα scripts:
    > `chmod +x $CATALINA_HOME/bin/*.sh`
@@ -1095,19 +1283,26 @@ open source και δωρεάν. Ο Jetty αναπτύσσεται από το E
 
 | Εντολή (Linux/macOS)             | Εντολή (Windows)                 | Τι κάνει                                                                     |
 |----------------------------------|----------------------------------|------------------------------------------------------------------------------|
-| `$CATALINA_HOME/bin/catalina.sh run` | `%CATALINA_HOME%\bin\catalina.bat run` | Τρέχει **στο προσκήνιο**: τα logs φαίνονται στο τερματικό, σταματάει με **Ctrl+C**. **Προτείνεται για ανάπτυξη.** |
-| `$CATALINA_HOME/bin/startup.sh`  | `%CATALINA_HOME%\bin\startup.bat`  | Τρέχει **στο παρασκήνιο**. Τα logs πάνε στο `logs/catalina.out`.              |
-| `$CATALINA_HOME/bin/shutdown.sh` | `%CATALINA_HOME%\bin\shutdown.bat` | Σταματάει τον Tomcat που ξεκίνησε με `startup`.                              |
+| `$CATALINA_HOME/bin/catalina.sh run` | `& "$env:CATALINA_HOME\bin\catalina.bat" run` | Τρέχει **στο προσκήνιο**: τα logs φαίνονται στο τερματικό, σταματάει με **Ctrl+C**. **Προτείνεται για ανάπτυξη.** |
+| `$CATALINA_HOME/bin/startup.sh`  | `& "$env:CATALINA_HOME\bin\startup.bat"`  | Τρέχει **στο παρασκήνιο**. Τα logs πάνε στο `logs/catalina.out`.              |
+| `$CATALINA_HOME/bin/shutdown.sh` | `& "$env:CATALINA_HOME\bin\shutdown.bat"` | Σταματάει τον Tomcat που ξεκίνησε με `startup`.                              |
+
+> Η στήλη των Windows είναι για **PowerShell** (`$env:ΜΕΤΑΒΛΗΤΗ`, και `&` για να τρέξει μια διαδρομή μέσα σε εισαγωγικά).
+> Στο παλιό *Command Prompt* (cmd) η αντίστοιχη σύνταξη είναι `%CATALINA_HOME%\bin\catalina.bat run`.
 
 Μετά την εκκίνηση, ανοίξτε <http://localhost:8080>. Πρέπει να δείτε τη σελίδα καλωσορίσματος του Tomcat.
 
 ### 9.4 Deploy της εφαρμογής
 
 Ο Tomcat έχει **auto-deploy**: παρακολουθεί τον φάκελο `webapps/` και, όταν βρει ένα νέο `.war`,
-το αποσυμπιέζει και ξεκινάει την εφαρμογή **χωρίς επανεκκίνηση**.
+το αποσυμπιέζει και ξεκινάει την εφαρμογή **χωρίς επανεκκίνηση**. Αν ο Tomcat δεν τρέχει τη στιγμή της αντιγραφής,
+η εφαρμογή γίνεται deploy στην επόμενη εκκίνησή του.
+
+Αφήστε τον Tomcat να τρέχει (Βήμα 9.3) σε ένα τερματικό. Σε ένα **δεύτερο τερματικό**, στον φάκελο του project
+(εκεί όπου είναι το `pom.xml`):
 
 ```bash
-cd webapp1                                   # ο φάκελος του project
+cd ~/java-web/webapp1                        # ο φάκελος του project σας
 mvn clean package
 cp target/webapp1.war $CATALINA_HOME/webapps/
 ```
@@ -1146,6 +1341,10 @@ INFO [...] HostConfig.deployWAR Deployment of web application archive [.../webap
 > Για να τρέχει η εφαρμογή στη ρίζα, αντιγράψτε τη ως `ROOT.war`. Πρώτα όμως διαγράψτε
 > τον υπάρχοντα φάκελο `webapps/ROOT` (τη σελίδα καλωσορίσματος του Tomcat).
 
+> **Και στο Jetty;** Εκεί το context path **δεν** προκύπτει από όνομα αρχείου, γιατί το `mvn jetty:run` δεν φτιάχνει `.war`.
+> Το ορίσαμε ρητά στο `pom.xml`, με `<contextPath>/webapp1</contextPath>` στη ρύθμιση του Jetty plugin (Βήμα 3),
+> ώστε τα URLs να είναι ίδια και στους δύο servers. Χωρίς αυτή τη ρύθμιση, το Jetty θα έτρεχε την εφαρμογή στη ρίζα (`/`).
+
 ### 9.6 Ο κύκλος ανάπτυξης: αλλαγή → redeploy
 
 Κάθε φορά που αλλάζετε κώδικα:
@@ -1164,7 +1363,8 @@ mvn clean package && cp target/webapp1.war $CATALINA_HOME/webapps/
 
 ### 9.7 Deploy από τον browser: Tomcat Manager
 
-Ο Tomcat έχει δύο web εφαρμογές διαχείρισης (UI):
+Ο Tomcat έρχεται με δύο web εφαρμογές διαχείρισης, τον **Manager** και τον **Host Manager**. Ο Manager έχει επιπλέον
+και μια σελίδα κατάστασης (*Server Status*):
 
 | UI                | URL                                     | Τι κάνει                                                                 | Απαιτούμενος ρόλος |
 |-------------------|-----------------------------------------|--------------------------------------------------------------------------|--------------------|
@@ -1177,15 +1377,25 @@ mvn clean package && cp target/webapp1.war $CATALINA_HOME/webapps/
 Για λόγους ασφαλείας **δεν υπάρχει κανένας χρήστης by default**. Αν πατήσετε *Manager App* χωρίς να
 έχετε ορίσει χρήστη, ο browser θα ζητήσει username/password και ό,τι κι αν δώσετε θα αποτύχει.
 
-#### Βήμα 1: Ορισμός χρήστη στο `conf/tomcat-users.xml`
+#### α) Ορισμός χρήστη στο `conf/tomcat-users.xml`
 
 1. **Σταματήστε** τον Tomcat (Ctrl+C ή `shutdown.sh`/`shutdown.bat`).
 2. Ανοίξτε με έναν text editor το αρχείο `$CATALINA_HOME/conf/tomcat-users.xml`
-   (Windows: `%CATALINA_HOME%\conf\tomcat-users.xml`). Από τερματικό, π.χ. `code $CATALINA_HOME/conf/tomcat-users.xml`
+   (Windows: `$env:CATALINA_HOME\conf\tomcat-users.xml`). Από τερματικό, π.χ. `code $CATALINA_HOME/conf/tomcat-users.xml`
    (VS Code) ή `nano $CATALINA_HOME/conf/tomcat-users.xml`.
    Στο **Codespaces** δείτε και την ενότητα [Χρήστης για τον Tomcat Manager στο Codespaces](#χρήστης-για-τον-tomcat-manager-στο-codespaces).
 3. Το αρχείο περιέχει ήδη παραδείγματα χρηστών, αλλά είναι **μέσα σε σχόλια** `<!-- ... -->`, άρα δεν ισχύουν.
-   Προσθέστε τις δικές σας γραμμές **ακριβώς πριν** το κλείσιμο `</tomcat-users>`, έξω από οποιοδήποτε σχόλιο:
+   Προσθέστε **μόνο** αυτές τις τρεις γραμμές, **ακριβώς πριν** το κλείσιμο `</tomcat-users>` (στο τέλος του αρχείου),
+   έξω από οποιοδήποτε σχόλιο:
+
+   ```xml
+   <role rolename="manager-gui"/>
+   <role rolename="admin-gui"/>
+   <user username="admin" password="Ενας-Δικος-Σας-Κωδικος" roles="manager-gui,admin-gui"/>
+   ```
+
+   Έτσι θα μοιάζει το αρχείο μετά την αλλαγή. **Μην** αντιγράψετε την ετικέτα `<tomcat-users ...>`: υπάρχει ήδη στο αρχείο,
+   και αν μπει δεύτερη φορά, το XML χαλάει.
 
    ```xml
    <tomcat-users xmlns="http://tomcat.apache.org/xml"
@@ -1210,21 +1420,21 @@ mvn clean package && cp target/webapp1.war $CATALINA_HOME/webapps/
 4. Αποθηκεύστε και **ξεκινήστε ξανά** τον Tomcat. Το αρχείο διαβάζεται κατά την εκκίνηση.
    Αν το XML έχει λάθος, ο Tomcat γράφει σφάλμα στο log (`logs/catalina.<ημερομηνία>.log`) και η σύνδεση δεν θα δουλεύει.
 
-#### Βήμα 2: Σύνδεση
+#### β) Σύνδεση
 
 1. Ανοίξτε <http://localhost:8080/manager/html>.
-2. Ο browser εμφανίζει παράθυρο σύνδεσης (*HTTP Basic Authentication*). Δώστε το `username` και το `password` του Βήματος 1.
+2. Ο browser εμφανίζει παράθυρο σύνδεσης (*HTTP Basic Authentication*). Δώστε το `username` και το `password` που ορίσατε στο (α).
 3. Θα δείτε τον πίνακα *Applications* με όλες τις εφαρμογές (`/`, `/docs`, `/manager`, `/webapp1`, …)
    και κουμπιά **Start / Stop / Reload / Undeploy** για την καθεμία.
 
-#### Βήμα 3: Deploy ενός `.war` από το UI
+#### γ) Deploy ενός `.war` από το UI
 
 1. Στην ενότητα **Deploy → WAR file to deploy**, πατήστε *Choose File / Browse* και επιλέξτε το `target/webapp1.war`.
 2. Πατήστε **Deploy**.
 3. Η εφαρμογή εμφανίζεται στη λίστα *Applications*. Πατήστε το path της (`/webapp1`) για να την ανοίξετε.
 
 Μετά από αλλαγές στον κώδικα: `mvn clean package`, μετά **Undeploy** της παλιάς έκδοσης και **Deploy** της νέας.
-Εναλλακτικά, αντιγράψτε το νέο `.war` στο `webapps/` όπως στο 9.6.
+Εναλλακτικά, αντιγράψτε το νέο `.war` στο `webapps/` όπως στο Βήμα 9.6.
 
 #### Προβλήματα σύνδεσης
 
@@ -1267,11 +1477,18 @@ curl -u deployer:ΚΩΔΙΚΟΣ -T target/webapp1.war \
 | `localhost.<ημερομηνία>.log`          | σφάλματα/exceptions των εφαρμογών                                   |
 | `localhost_access_log.<ημερομηνία>.txt` | κάθε HTTP request που δέχτηκε ο server                           |
 
-Παρακολούθηση σε πραγματικό χρόνο (Linux/macOS):
+Παρακολούθηση σε πραγματικό χρόνο (Ctrl+C για έξοδο):
 
 ```bash
-tail -f $CATALINA_HOME/logs/catalina.out
+tail -f $CATALINA_HOME/logs/catalina.out                          # Linux/macOS
 ```
+
+```powershell
+Get-Content -Wait "$env:CATALINA_HOME\logs\catalina.$(Get-Date -Format yyyy-MM-dd).log"   # Windows (PowerShell)
+```
+
+> Στα Windows ο `startup.bat` ανοίγει ξεχωριστό παράθυρο με τα μηνύματα και **δεν** γράφει `catalina.out`, γι' αυτό
+> παρακολουθούμε το `catalina.<ημερομηνία>.log`.
 
 ### 9.9 Αλλαγή θύρας
 
@@ -1307,26 +1524,54 @@ tail -f $CATALINA_HOME/logs/catalina.out
 
 | Πρόβλημα | Αιτία / Λύση |
 |----------|--------------|
-| `mvn: command not found` | Το Maven δεν είναι στο `PATH`. |
+| `mvn: command not found` | Το Maven δεν είναι στο `PATH` (Μέρος Α, ενότητα 2). |
+| `The goal you specified requires a project to execute but there is no POM in this directory` | Τρέξατε `mvn package` (ή άλλη phase) έξω από τον φάκελο του project. Κάντε `cd` στον φάκελο που έχει το `pom.xml`. |
+| `No plugin found for prefix 'jetty' in the current project ...` | Το `mvn jetty:run` τρέχει μόνο μέσα στον φάκελο του project, γιατί το Jetty plugin είναι δηλωμένο στο **δικό του** `pom.xml`. Κάντε `cd webapp1`. Αν είστε ήδη εκεί, ελέγξτε ότι το plugin υπάρχει στο `pom.xml` (Βήμα 3). |
 | `release version 21 not supported` | Το Maven τρέχει με παλιότερο JDK. Δείτε το `mvn -v` και ρυθμίστε το `JAVA_HOME`, ή μειώστε το `maven.compiler.release`. |
 | `package jakarta.servlet does not exist` | Λείπει η dependency `jakarta.servlet-api` από το `pom.xml`. |
-| 404 στο `/hello` | Ελέγξτε το URL (περιλαμβάνει το context path `/webapp1`), το `@WebServlet` και ότι το `web.xml` είναι έκδοση 6.0 (Βήμα 4) και όχι κάποια παλιότερη. |
+| 404 στο `/hello` | Ελέγξτε το URL (περιλαμβάνει το context path `/webapp1`), το `@WebServlet("/hello")`, και ότι το `web.xml` **δεν** είναι έκδοση 2.x (τα annotations δουλεύουν από την 3.0 και μετά, εδώ χρησιμοποιούμε 6.0, Βήμα 4). |
 | Η εφαρμογή γίνεται deploy σε Tomcat 9 αλλά τα servlets δεν φορτώνουν (404) | Ο Tomcat 9 χρησιμοποιεί `javax.*`. Χρησιμοποιήστε Tomcat 10.1+. |
-| Ελληνικά εμφανίζονται ως `???` | Βάλτε `charset=UTF-8` στο `setContentType` και `<%@ page contentType="text/html; charset=UTF-8" %>` στα JSP. |
+| Ελληνικά εμφανίζονται ως `???` ή ως `ÎÎ±Î»Î·...` | Σε Servlet: βάλτε `charset=UTF-8` στο `setContentType`. Σε JSP: βάλτε `<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>` στην πρώτη γραμμή (Βήμα 8). Ελέγξτε και ότι το αρχείο είναι αποθηκευμένο σε UTF-8 (κάτω δεξιά στο VS Code). |
 | `Address already in use` / port 8080 | Τρέχει ήδη κάποιος server (π.χ. Tomcat ή άλλο `jetty:run`). Σταματήστε τον ή αλλάξτε θύρα. |
-| Tomcat: `Neither the JAVA_HOME nor the JRE_HOME environment variable is defined` | Ορίστε το `JAVA_HOME` (βλ. 9.2). |
+| Tomcat: `Neither the JAVA_HOME nor the JRE_HOME environment variable is defined` | Ορίστε το `JAVA_HOME` (Μέρος Α, ενότητα 2). |
 | Tomcat: `Permission denied` στο `startup.sh` | `chmod +x $CATALINA_HOME/bin/*.sh` |
 | Tomcat: το `.war` αντιγράφηκε αλλά η εφαρμογή δεν ανοίγει | Δείτε τα `logs/catalina.<ημερομηνία>.log` και `logs/localhost.<ημερομηνία>.log`. Συχνή αιτία: λάθος έκδοση Java ή `javax` αντί για `jakarta`. |
-| Tomcat Manager: ζητάει συνεχώς κωδικό ή 403 Access Denied | Δείτε τον πίνακα «Προβλήματα σύνδεσης» στο 9.7. |
+| Tomcat Manager: ζητάει συνεχώς κωδικό ή 403 Access Denied | Δείτε τον πίνακα «Προβλήματα σύνδεσης» στο Βήμα 9.7. |
 | `400 Bad Request – Invalid character found in the request target` (με `curl`) | Μη κωδικοποιημένοι χαρακτήρες (π.χ. ελληνικά) στο URL. Ο browser τους κωδικοποιεί αυτόματα. Με curl: `curl -G --data-urlencode "name=Μαρία" http://localhost:8080/webapp1/hello` |
+| HTTP **500** στον browser | Ο κώδικάς μας πέταξε exception. Το πλήρες stack trace είναι στο τερματικό του `jetty:run` / `catalina.sh run` (ή στα logs του Tomcat). Διαβάστε τη **γραμμή `Caused by:`** και τη γραμμή του **δικού σας** αρχείου (π.χ. `HelloServlet.java:21`). |
 | Περίεργα σφάλματα μετά από αλλαγές | Δοκιμάστε `mvn clean package`. Αν επιμένει, `mvn -U clean package`. |
+
+## Σύνοψη
+
+**Τι μάθαμε:**
+
+- Το **Maven** περιγράφει το project στο `pom.xml` (συντεταγμένες, dependencies με scopes, plugins), κατεβάζει τις
+  βιβλιοθήκες και κάνει το build. Οι εντολές του είναι **phases** του lifecycle (`compile`, `test`, `package`, …), όπου κάθε
+  phase τρέχει και όλες τις προηγούμενες, ή απευθείας **goals** plugins (`jetty:run`, `dependency:tree`).
+- Μια **Java web εφαρμογή** πακετάρεται σε **`.war`** και τρέχει σε **servlet container** (Tomcat, Jetty). Ένα **Servlet**
+  απαντά σε ένα URL (`@WebServlet`) με τις μεθόδους `doGet`/`doPost`.
+
+**Ο κύκλος εργασίας**, σε μία ματιά:
+
+```bash
+cd webapp1                                                # πάντα στον φάκελο του pom.xml
+mvn clean package                                         # compile + tests + target/webapp1.war
+mvn jetty:run                                             # ανάπτυξη: http://localhost:8080/webapp1/
+cp target/webapp1.war $CATALINA_HOME/webapps/             # deploy σε Tomcat (που τρέχει με catalina.sh run)
+mvn dependency:tree                                       # ποιες βιβλιοθήκες χρησιμοποιούνται
+```
+
+**Επόμενο βήμα:** συνεχίστε με το **[Forms.md](Forms.md)**, όπου η εφαρμογή αποκτά **JSP σελίδες**, **CSS** και μια **HTML φόρμα**
+που αποθηκεύει δεδομένα (`doPost`, validation, redirect).
 
 ## Ασκήσεις
 
 1. Τρέξτε `mvn dependency:tree` και εξηγήστε ποιες βιβλιοθήκες φέρνει το `junit-jupiter`.
 2. Αλλάξτε το `index.jsp` ώστε να περιέχει μια HTML φόρμα με πεδίο `name` που κάνει `GET` στο `hello`.
+   (Θυμηθείτε το `<%@ page ... charset=UTF-8 %>` αν γράψετε ελληνικά, Βήμα 8. Οι φόρμες εξηγούνται αναλυτικά στο [Forms.md](Forms.md).)
 3. Προσθέστε ένα δεύτερο servlet `/time` που επιστρέφει την τρέχουσα ώρα (`java.time.LocalDateTime`).
-4. Υλοποιήστε `doPost` στο `HelloServlet` και αλλάξτε τη φόρμα σε `method="post"`.
+4. Υλοποιήστε `doPost` στο `HelloServlet` και αλλάξτε τη φόρμα σε `method="post"`. Ποια διαφορά βλέπετε στο URL;
+   (Η διαφορά GET/POST εξηγείται στο [Forms.md](Forms.md), ενότητα 8.)
 5. Προσθέστε τη βιβλιοθήκη Gson (scope `compile`) και ένα servlet `/api/hello` που επιστρέφει JSON.
    Μετά το `mvn package`, ελέγξτε ότι το jar της Gson βρίσκεται στο `WEB-INF/lib/` του `.war`.
 6. Κάντε deploy το `.war` σε Tomcat και επαληθεύστε ότι δουλεύει όπως και με το Jetty.
