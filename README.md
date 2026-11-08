@@ -8,6 +8,7 @@
 ## Περιεχόμενα
 
 - [Γρήγορη εκκίνηση με GitHub Codespaces](#γρήγορη-εκκίνηση-με-github-codespaces)
+  - [Χρήστης για τον Tomcat Manager στο Codespaces](#χρήστης-για-τον-tomcat-manager-στο-codespaces)
 - [Μέρος Α: Εισαγωγή στο Maven](#μέρος-α-εισαγωγή-στο-maven)
   - [1. Τι είναι το Maven](#1-τι-είναι-το-maven)
   - [2. Εγκατάσταση](#2-εγκατάσταση)
@@ -27,6 +28,7 @@
   - [Βήμα 6: Ένα unit test](#βήμα-6-ένα-unit-test)
   - [Βήμα 7: Build](#βήμα-7-build)
   - [Βήμα 8: Εκτέλεση με Jetty](#βήμα-8-εκτέλεση-με-jetty)
+  - [Jetty ή Tomcat;](#jetty-ή-tomcat)
   - [Βήμα 9: Εκτέλεση σε Apache Tomcat](#βήμα-9-εκτέλεση-σε-apache-tomcat)
 - [Συχνά προβλήματα](#συχνά-προβλήματα)
 - [Ασκήσεις](#ασκήσεις)
@@ -66,6 +68,40 @@ mvn clean package && cp target/webapp1.war $CATALINA_HOME/webapps/ && $CATALINA_
 **`/webapp1/`**. Όλες τις προωθημένες θύρες τις βλέπετε στην καρτέλα **Ports** (δίπλα στο *Terminal*).
 
 Όπου ο οδηγός γράφει `http://localhost:8080/...`, στο Codespaces χρησιμοποιήστε τη διεύθυνση από την καρτέλα *Ports*.
+
+### Χρήστης για τον Tomcat Manager στο Codespaces
+
+Ο Tomcat του codespace είναι εγκατεστημένος στο `/home/vscode/tomcat` (= `$CATALINA_HOME`), **έξω** από τον φάκελο του project,
+οπότε δεν φαίνεται στο Explorer. Για να ορίσετε χρήστη για το Manager UI (εξηγείται αναλυτικά στην [ενότητα 9.7](#97-deploy-από-τον-browser-tomcat-manager)):
+
+1. Σταματήστε τον Tomcat αν τρέχει (Ctrl+C στο τερματικό του `catalina.sh run`).
+2. Ανοίξτε το αρχείο στον editor του VS Code από το τερματικό:
+   ```bash
+   code $CATALINA_HOME/conf/tomcat-users.xml
+   ```
+3. Πριν από το `</tomcat-users>` (στο **τέλος** του αρχείου, **έξω** από τα σχόλια `<!-- -->`) προσθέστε:
+   ```xml
+   <role rolename="manager-gui"/>
+   <user username="admin" password="Ενας-Δικος-Σας-Κωδικος" roles="manager-gui"/>
+   ```
+   και αποθηκεύστε (Ctrl+S).
+4. Ελέγξτε ότι το XML είναι σωστό και ότι ο χρήστης δεν είναι μέσα σε σχόλιο:
+   ```bash
+   tail -5 $CATALINA_HOME/conf/tomcat-users.xml
+   ```
+5. Ξεκινήστε τον Tomcat: `$CATALINA_HOME/bin/catalina.sh run`.
+6. Από την καρτέλα **Ports** ανοίξτε τη διεύθυνση της θύρας 8080 και προσθέστε στο τέλος **`/manager/html`**.
+   Δώστε το username/password που ορίσατε.
+
+> **Καλό να ξέρετε**
+> - Οι θύρες ενός codespace είναι by default **private**: τις ανοίγετε μόνο εσείς, συνδεδεμένοι στο GitHub.
+>   **Μην** κάνετε τη θύρα 8080 *Public* όσο ο Manager έχει απλό κωδικό.
+> - Οι αλλαγές στο `tomcat-users.xml` **διατηρούνται** όταν το codespace σταματά και ξαναξεκινά. **Χάνονται** μόνο αν
+>   κάνετε *Rebuild Container* ή φτιάξετε νέο codespace, γιατί τότε ο Tomcat εγκαθίσταται από την αρχή.
+> - Αν μετά τη σύνδεση εμφανιστεί **403 Access Denied**, ελέγξτε πρώτα ότι ο ρόλος είναι γραμμένος σωστά (`manager-gui`).
+>   Αν είναι σωστός, το πρόβλημα είναι ο περιορισμός του Manager σε συνδέσεις από `localhost`
+>   (`$CATALINA_HOME/webapps/manager/META-INF/context.xml`, `RemoteCIDRValve`). Σε αυτή την περίπτωση χρησιμοποιήστε για deploy
+>   την αντιγραφή του `.war` στο `webapps/` (ενότητα 9.4), που δεν χρειάζεται τον Manager.
 
 > **Σημειώσεις**
 > - Το Codespaces έχει περιορισμένες δωρεάν ώρες χρήσης το μήνα. Οι φοιτητές παίρνουν περισσότερες μέσω του
@@ -775,10 +811,59 @@ mvn jetty:run
 
 > Αν η θύρα 8080 είναι πιασμένη: `mvn jetty:run -Djetty.http.port=9090`
 
+## Jetty ή Tomcat;
+
+### Τι κοινό έχουν
+
+Ο **Eclipse Jetty** και ο **Apache Tomcat** είναι και οι δύο **servlet containers**: web servers που
+υλοποιούν τις προδιαγραφές Jakarta **Servlet**, **JSP**, **Expression Language** και **WebSocket**. Και οι δύο είναι
+open source και δωρεάν. Ο Jetty αναπτύσσεται από το Eclipse Foundation και ο Tomcat από το Apache Software Foundation.
+
+Επειδή υλοποιούν **τις ίδιες προδιαγραφές**, **το ίδιο `.war` τρέχει και στους δύο χωρίς καμία αλλαγή**.
+Ο κώδικάς μας χρησιμοποιεί μόνο `jakarta.servlet.*` και δεν «ξέρει» σε ποιον server τρέχει.
+Ακόμα και τα JSP μεταγλωττίζονται με τον ίδιο μηχανισμό: ο Jetty χρησιμοποιεί τον **Jasper**, τον JSP compiler του Tomcat.
+
+> Κανένας από τους δύο **δεν** είναι πλήρης *Jakarta EE application server* (όπως WildFly, GlassFish, Payara, Open Liberty).
+> Δεν περιλαμβάνουν, π.χ., JPA ή CDI. Αν τα χρειαστούμε, τα προσθέτουμε ως dependencies στο `pom.xml`.
+
+### Σε τι διαφέρουν (όπως τους χρησιμοποιούμε εδώ)
+
+|                              | **Jetty** μέσω `mvn jetty:run`                                        | **Tomcat** (εγκατεστημένος)                                    |
+|------------------------------|------------------------------------------------------------------------|----------------------------------------------------------------|
+| Εγκατάσταση                  | καμία: το Maven κατεβάζει το plugin                                    | download και αποσυμπίεση, ρύθμιση `JAVA_HOME`                  |
+| Εκκίνηση                     | `mvn jetty:run` μέσα στον φάκελο του project                            | `catalina.sh run` / `startup.sh`                               |
+| Από πού τρέχει η εφαρμογή    | **απευθείας** από τα `src/main/webapp/` και `target/classes/`. **Δεν χρειάζεται `.war`** | από το **`.war`** στο `webapps/`              |
+| Αλλαγή σε JSP / CSS / HTML   | φαίνεται με απλό refresh (σε λίγα δευτερόλεπτα)                       | νέο `mvn package` και αντιγραφή του `.war`                     |
+| Αλλαγή σε κώδικα Java        | Ctrl+C και ξανά `mvn jetty:run` (ή αυτόματα, βλ. παρακάτω)             | νέο `mvn package` και αντιγραφή του `.war` (αυτόματο redeploy) |
+| Πόσες εφαρμογές              | μία: το project που τρέχουμε                                          | **πολλές** ταυτόχρονα, μία ανά `.war`                          |
+| Ρυθμίσεις                    | στο `pom.xml` (`<configuration>` του plugin)                           | αρχεία στο `conf/` (`server.xml`, `tomcat-users.xml`, …)       |
+| Διαχείριση από browser       | όχι                                                                    | ναι, Tomcat Manager (9.7)                                      |
+| Logs                         | στο τερματικό                                                          | στο τερματικό (`catalina.sh run`) ή στον φάκελο `logs/`        |
+
+### Ποιον να χρησιμοποιήσω;
+
+- **Κατά την ανάπτυξη:** `mvn jetty:run`. Ξεκινά με μία εντολή, δεν θέλει εγκατάσταση, και οι αλλαγές σε JSP/CSS φαίνονται αμέσως.
+- **Για να δείτε πώς γίνεται πραγματικό deploy:** Tomcat. Είναι ο πιο διαδεδομένος standalone servlet container,
+  και η διαδικασία `.war` → server είναι αυτή που θα συναντήσετε σε πραγματικούς servers.
+- Και στην αγορά χρησιμοποιούνται και οι δύο. Συχνά μάλιστα **ενσωματωμένοι** μέσα σε μια εφαρμογή αντί για ξεχωριστό
+  πρόγραμμα. Για παράδειγμα, το Spring Boot έχει by default ενσωματωμένο Tomcat και προαιρετικά Jetty.
+
+> **Tip: αυτόματο reload στο Jetty.** Προσθέστε `<scan>1</scan>` στο `<configuration>` του Jetty plugin:
+> ```xml
+> <configuration>
+>   <scan>1</scan>
+>   <webApp>
+>     <contextPath>/webapp1</contextPath>
+>   </webApp>
+> </configuration>
+> ```
+> Αφήστε το `mvn jetty:run` να τρέχει και, μετά από κάθε αλλαγή σε Java, τρέξτε σε **δεύτερο τερματικό** `mvn compile`.
+> Το Jetty βλέπει τα νέα `.class` και ξαναφορτώνει μόνο του την εφαρμογή μέσα σε λίγα δευτερόλεπτα.
+> Προσοχή: με το reload χάνονται τα δεδομένα που κρατάει η εφαρμογή στη μνήμη.
+
 ## Βήμα 9: Εκτέλεση σε Apache Tomcat
 
-Το Jetty plugin είναι βολικό για ανάπτυξη. Στην πράξη όμως, ένα `.war` γίνεται συνήθως
-**deploy** σε έναν servlet container όπως ο **Apache Tomcat**. Ο Tomcat είναι ένα ξεχωριστό
+Ας δούμε τώρα πώς γίνεται deploy σε έναν **ξεχωριστό** servlet container, τον **Apache Tomcat**. Ο Tomcat είναι ένα αυτόνομο
 πρόγραμμα: το εγκαθιστούμε μία φορά και μπορεί να «φιλοξενεί» πολλές web εφαρμογές ταυτόχρονα.
 
 ### 9.1 Ποια έκδοση Tomcat
@@ -924,7 +1009,9 @@ mvn clean package && cp target/webapp1.war $CATALINA_HOME/webapps/
 
 1. **Σταματήστε** τον Tomcat (Ctrl+C ή `shutdown.sh`/`shutdown.bat`).
 2. Ανοίξτε με έναν text editor το αρχείο `$CATALINA_HOME/conf/tomcat-users.xml`
-   (Windows: `%CATALINA_HOME%\conf\tomcat-users.xml`).
+   (Windows: `%CATALINA_HOME%\conf\tomcat-users.xml`). Από τερματικό, π.χ. `code $CATALINA_HOME/conf/tomcat-users.xml`
+   (VS Code) ή `nano $CATALINA_HOME/conf/tomcat-users.xml`.
+   Στο **Codespaces** δείτε και την ενότητα [Χρήστης για τον Tomcat Manager στο Codespaces](#χρήστης-για-τον-tomcat-manager-στο-codespaces).
 3. Το αρχείο περιέχει ήδη παραδείγματα χρηστών, αλλά είναι **μέσα σε σχόλια** `<!-- ... -->`, άρα δεν ισχύουν.
    Προσθέστε τις δικές σας γραμμές **ακριβώς πριν** το κλείσιμο `</tomcat-users>`, έξω από οποιοδήποτε σχόλιο:
 
