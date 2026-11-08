@@ -10,7 +10,7 @@
   <div class="alert alert-error">Η φόρμα έχει λάθη. Διορθώστε τα πεδία με κόκκινο.</div>
 </c:if>
 
-<form action="${ctx}/students/new" method="post" class="form">
+<form action="${ctx}/students/new" method="post">
 
   <div class="field">
     <label for="firstName">Όνομα</label>

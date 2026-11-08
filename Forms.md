@@ -9,7 +9,12 @@
 - πού μπαίνουν τα **στατικά αρχεία** (CSS, εικόνες) και πώς τα συνδέουμε στο HTML.
 
 > **Προαπαιτούμενα:** Έχετε ολοκληρώσει το [README.md](README.md) (Μέρος Β), δηλαδή έχετε το project `webapp1`
-> που τρέχει με `mvn jetty:run` ή σε Tomcat 10.1+/11.
+> που τρέχει με `mvn jetty:run` ή σε Tomcat 10.1+/11. Θα χρειαστείτε και όσα εξηγεί η ενότητα του README
+> [«Πριν ξεκινήσουμε: πώς λειτουργεί μια web εφαρμογή»](README.md#πριν-ξεκινήσουμε-πώς-λειτουργεί-μια-web-εφαρμογή):
+> request/response, `doGet`, `getParameter`, context path και κωδικούς HTTP (302, 404, 405, 500).
+>
+> Αν δουλεύετε μέσα στο repository του μαθήματος, ο φάκελος `webapp1/` εκεί είναι ήδη το **τελικό αποτέλεσμα** αυτού του οδηγού.
+> Για να τον φτιάξετε μόνοι σας, συνεχίστε στο δικό σας `webapp1` από το README.
 ## Περιεχόμενα
 
 - [0. Τι θα φτιάξουμε](#0-τι-θα-φτιάξουμε)
@@ -71,6 +76,27 @@ webapp1/
                 ├── student-view.jsp          ← ΝΕΟ
                 └── student-list.jsp          ← ΝΕΟ
 ```
+
+**Οι νέοι φάκελοι.** Δημιουργήστε τους από την αρχή, μέσα στον φάκελο `webapp1` (εκεί όπου είναι το `pom.xml`):
+
+```bash
+mkdir -p src/main/java/gr/uniwa/ice/webapp1/{model,repository,web}
+mkdir -p src/main/webapp/css src/main/webapp/WEB-INF/jsp
+```
+
+```powershell
+# Windows (PowerShell)
+mkdir src\main\java\gr\uniwa\ice\webapp1\model, src\main\java\gr\uniwa\ice\webapp1\repository, src\main\java\gr\uniwa\ice\webapp1\web
+mkdir src\main\webapp\css, src\main\webapp\WEB-INF\jsp
+```
+
+> Στο VS Code μπορείτε και από το Explorer: δεξί κλικ → *New Folder*. Θυμηθείτε ότι **package = φάκελος**: η κλάση
+> `Student` είναι στο package `gr.uniwa.ice.webapp1.model`, άρα στον φάκελο `gr/uniwa/ice/webapp1/model/`, και η πρώτη γραμμή
+> του αρχείου πρέπει να είναι `package gr.uniwa.ice.webapp1.model;`.
+
+**Πώς προχωράμε.** Σε κάθε ενότητα δημιουργείτε ένα ή περισσότερα αρχεία. Στα σημεία **▶ Δοκιμή** τρέχετε την εφαρμογή
+και ελέγχετε ότι όλα δουλεύουν **πριν** συνεχίσετε. Έτσι, αν κάτι πάει στραβά, ξέρετε ότι το λάθος είναι σε όσα γράψατε
+μετά την τελευταία επιτυχημένη δοκιμή.
 
 ---
 
@@ -189,10 +215,10 @@ webapp1/
 | `maven.compiler.release` | για ποια έκδοση Java γίνεται compile (21). Αν έχετε JDK 17, βάλτε `17` |
 | `project.build.sourceEncoding` | τα αρχεία πηγαίου κώδικα είναι σε **UTF-8**, ώστε να δουλεύουν τα ελληνικά μέσα στα `.java` |
 | `jakarta.servlet-api`, scope **`provided`** | οι κλάσεις `HttpServlet`, `HttpServletRequest` κ.λπ. Χρειάζονται για το compile, αλλά **δεν** μπαίνουν στο `.war`, γιατί τις έχει ήδη ο server |
-| `jakarta.servlet.jsp.jstl-api` + `jakarta.servlet.jsp.jstl` | **νέο:** η JSTL (`<c:if>`, `<c:forEach>`, `<c:out>`, …). Το πρώτο είναι το **API** (interfaces) και το δεύτερο μια **υλοποίηση** (της Glassfish). Scope `compile` (το default), γιατί ο Tomcat **δεν** έχει JSTL, άρα πρέπει να μπουν στο `WEB-INF/lib/` του `.war` |
+| `jakarta.servlet.jsp.jstl-api` + `jakarta.servlet.jsp.jstl` | **νέο:** η JSTL (`<c:if>`, `<c:forEach>`, `<c:out>`, …). Το πρώτο είναι το **API** (interfaces) και το δεύτερο μια **υλοποίηση** (της Glassfish). Scope `compile` (το default), γιατί ο Tomcat **δεν** έχει JSTL, άρα πρέπει να μπουν στο `WEB-INF/lib/` του `.war`. Οι εκδόσεις διαφέρουν (3.0.2 και 3.0.1) γιατί είναι δύο ανεξάρτητα artifacts με δικές τους εκδόσεις. Και τα δύο υλοποιούν την ίδια προδιαγραφή, JSTL 3.0 |
 | `<exclusions>` → `jakarta.el-api` | **νέο:** το `jstl-api` φέρνει μαζί του (transitive) και το API του **Expression Language**. Αυτό όμως το έχει ήδη ο server, και ένα δεύτερο αντίγραφο στο `.war` μπορεί να προκαλέσει συγκρούσεις. Το εξαιρούμε |
 | `junit-jupiter`, scope **`test`** | JUnit 5, μόνο για τα tests. Δεν μπαίνει στο `.war` |
-| `<finalName>webapp1</finalName>` | το αρχείο θα λέγεται `target/webapp1.war`, άρα το URL θα είναι `/webapp1/` (README §9.5) |
+| `<finalName>webapp1</finalName>` | το αρχείο θα λέγεται `target/webapp1.war`, άρα το URL θα είναι `/webapp1/` (README, Βήμα 9.5) |
 | `maven-compiler/surefire/war-plugin` | τα plugins που κάνουν compile, τρέχουν τα tests και φτιάχνουν το `.war`. Δηλώνουμε **συγκεκριμένες εκδόσεις** ώστε το build να είναι ίδιο σε όλους τους υπολογιστές |
 | `jetty-ee10-maven-plugin` | ενσωματωμένος server για `mvn jetty:run`. Το `<contextPath>` κάνει το URL ίδιο με του Tomcat (`/webapp1`) |
 
@@ -237,10 +263,10 @@ WEB-INF/lib/jakarta.servlet.jsp.jstl-api-3.0.2.jar
 
 | Κομμάτι | Τι σημαίνει |
 |---------|-------------|
-| `xmlns="https://jakarta.ee/..."`, `version="6.0"` | το αρχείο ακολουθεί την προδιαγραφή **Servlet 6.0** (Jakarta EE 10). **Σημαντικό:** το archetype φτιάχνει `web.xml` 4.0 (Java EE, εποχή `javax.*`). Το αντικαθιστούμε με την έκδοση που ταιριάζει στον κώδικα και στους servers μας. Με πολύ παλιά αρχεία, όπως το 2.3 της έκδοσης 1.0 του archetype, ο server θεωρεί την εφαρμογή «παλιά» και **απενεργοποιεί το Expression Language**, οπότε στη σελίδα θα βλέπατε κυριολεκτικά `${student.firstName}` |
+| `xmlns="https://jakarta.ee/..."`, `version="6.0"` | το αρχείο ακολουθεί την προδιαγραφή **Servlet 6.0** (Jakarta EE 10). Αυτό το κάναμε ήδη στο README (Βήμα 4), όπου αντικαταστήσαμε το `web.xml` 4.0 του archetype. Εδώ **δεν** αλλάζει. Υπενθύμιση: με πολύ παλιά αρχεία, όπως το 2.3 της έκδοσης 1.0 του archetype, ο server θεωρεί την εφαρμογή «παλιά» και **απενεργοποιεί το Expression Language**, οπότε στη σελίδα θα βλέπατε κυριολεκτικά `${student.firstName}` |
 | `<display-name>` | ένα όνομα για την εφαρμογή (φαίνεται π.χ. στον Tomcat Manager) |
-| `<request-character-encoding>` | **νέο:** τα δεδομένα που στέλνει ο browser (φόρμες) διαβάζονται ως **UTF-8** (εξήγηση παρακάτω) |
-| `<response-character-encoding>` | **νέο:** οι απαντήσεις μας στέλνονται σε UTF-8 |
+| `<request-character-encoding>` | **νέο:** το **σώμα** (body) των requests, δηλαδή τα δεδομένα που στέλνει μια φόρμα με `POST`, διαβάζεται ως **UTF-8** (εξήγηση παρακάτω). Δεν αφορά το query string των GET (`?q=...`): αυτό το αποκωδικοποιεί ο server με τη δική του ρύθμιση, που στον Tomcat και στο Jetty είναι ήδη UTF-8 |
+| `<response-character-encoding>` | **νέο:** οι απαντήσεις μας στέλνονται σε UTF-8. Ισχύει για **όλες** τις απαντήσεις, και αυτές των Servlets. Στις JSP δηλώνουμε επιπλέον `contentType="...; charset=UTF-8"`, ώστε κάθε σελίδα να είναι σωστή ακόμα κι αν αντιγραφεί σε άλλο project |
 | `<welcome-file-list>` | ποιο αρχείο δείχνεται όταν ζητηθεί σκέτος φάκελος, π.χ. `/webapp1/` → `index.jsp` |
 
 > **Γιατί χρειάζεται το UTF-8;** Η προδιαγραφή Servlet ορίζει ως default κωδικοποίηση το ISO‑8859‑1. Με αυτήν, το «Μαρία» που
@@ -283,7 +309,8 @@ out.println("</body></html>");
 απλώς το γράφουμε «ανάποδα»: HTML με λίγη Java, αντί για Java με λίγο HTML.
 
 > Στον Tomcat μπορείτε να δείτε τον κώδικα Java που παράγεται στο
-> `$CATALINA_HOME/work/Catalina/localhost/webapp1/org/apache/jsp/...`.
+> `$CATALINA_HOME/work/Catalina/localhost/webapp1/org/apache/jsp/...` (π.χ. το `index.jsp` γίνεται `index_jsp.java`).
+> Το Jetty (`mvn jetty:run`) τα γράφει σε έναν προσωρινό φάκελο του συστήματος, που σβήνεται όταν σταματήσει.
 
 ### 2.3 Ποιος κάνει τι: Model–View–Controller (MVC)
 
@@ -360,6 +387,17 @@ ${param.saved}                <%-- request.getParameter("saved") --%>
 ${pageContext.request.contextPath}   <%-- "/webapp1" --%>
 ```
 
+Τα `student` και `errors` είναι attributes που **εμείς** βάλαμε με `setAttribute`. Τα `param` και `pageContext` είναι
+**έτοιμα αντικείμενα** (*implicit objects*) που υπάρχουν πάντα σε κάθε JSP:
+
+| Implicit object | Τι είναι | Αντίστοιχο σε Java |
+|-----------------|----------|--------------------|
+| `param` | οι παράμετροι του request (φόρμα ή `?x=...`) | `${param.x}` = `request.getParameter("x")` |
+| `paramValues` | όλες οι τιμές μιας παραμέτρου (π.χ. πολλά checkboxes με το ίδιο `name`) | `request.getParameterValues("x")` |
+| `pageContext` | πρόσβαση σε όλα τα αντικείμενα της σελίδας | `${pageContext.request}` = το ίδιο `HttpServletRequest` με το `req` του Servlet |
+| `requestScope`, `sessionScope`, `applicationScope` | ψάχνουν attribute **μόνο** σε ένα scope (βλ. παρακάτω) | `request.getAttribute("x")` κ.λπ. |
+| `header` | τα HTTP headers του request | `request.getHeader("x")` |
+
 Χρήσιμοι τελεστές:
 
 | EL                                      | Σημασία                                                         |
@@ -375,7 +413,14 @@ ${pageContext.request.contextPath}   <%-- "/webapp1" --%>
 1. **Δεν «σκάει» με `null`:** αν το `student` δεν υπάρχει, το `${student.firstName}` απλώς δεν τυπώνει τίποτα,
    αντί για `NullPointerException`. Αυτό μας βολεύει: η ίδια φόρμα δουλεύει και κενή και συμπληρωμένη.
 2. **Πού ψάχνει:** το `${student}` ψάχνει attribute με όνομα `student` με τη σειρά: page → **request** → session → application.
-   Εμείς θα χρησιμοποιούμε σχεδόν πάντα **request attributes** (`req.setAttribute(...)`).
+   Αυτά λέγονται **scopes** και διαφέρουν στο **πόσο ζει** ένα attribute:
+
+   | Scope | Ζει όσο… | Πώς μπαίνει | Θα το χρησιμοποιήσουμε |
+   |-------|----------|-------------|------------------------|
+   | **page** | εκτελείται η συγκεκριμένη JSP | `<c:set var="x" .../>` | για βοηθητικές τιμές μέσα σε μια σελίδα (`pageTitle`, `ctx`) |
+   | **request** | διαρκεί **ένα** HTTP request (και τα `forward` του) | `req.setAttribute("x", obj)` | **κυρίως αυτό**: δεδομένα από το Servlet στη JSP |
+   | **session** | ο **ίδιος χρήστης** κάνει requests (π.χ. «καλάθι», login) | `req.getSession().setAttribute(...)` | σε επόμενο εργαστήριο |
+   | **application** | τρέχει η εφαρμογή, κοινό για **όλους** τους χρήστες | `getServletContext().setAttribute(...)` | όχι εδώ |
 
 > ⚠ **Ασφάλεια (XSS):** Το `${...}` τυπώνει την τιμή **όπως είναι**, χωρίς escaping. Αν ένας χρήστης γράψει
 > ως όνομα `<script>...</script>`, αυτό θα εκτελεστεί στον browser όποιου δει τη σελίδα (*Cross‑Site Scripting*).
@@ -400,10 +445,19 @@ ${pageContext.request.contextPath}   <%-- "/webapp1" --%>
 <c:forEach var="st" items="${students}"> ${st.id} </c:forEach>   <%-- for-each σε λίστα --%>
 <c:forEach var="i" begin="1" end="10"> ${i} </c:forEach>         <%-- for i = 1..10 --%>
 
-<c:set var="pageTitle" value="Νέος φοιτητής"/>                <%-- μεταβλητή --%>
+<c:set var="pageTitle" value="Νέος φοιτητής"/>                <%-- «μεταβλητή» (page attribute) --%>
 <c:out value="${student.firstName}"/>                          <%-- ασφαλής εκτύπωση (escaping) --%>
 ${fn:escapeXml(student.firstName)}                             <%-- ασφαλής εκτύπωση ως συνάρτηση --%>
 ```
+
+- Το **`<c:set>`** δεν φτιάχνει μεταβλητή Java. Φτιάχνει ένα **attribute στο page scope** (βλ. 2.5), που μετά το διαβάζουμε με `${pageTitle}`.
+  Στο κείμενο θα το λέμε για ευκολία «μεταβλητή».
+- Τα `c` και `fn` είναι **δύο διαφορετικές βιβλιοθήκες**. Κάθε JSP δηλώνει με `<%@ taglib %>` **όσες** χρησιμοποιεί. Αν γράψετε
+  `${fn:...}` χωρίς να έχετε δηλώσει το `fn`, η σελίδα βγάζει σφάλμα (HTTP 500). Το *prefix* (`c`, `fn`) το διαλέγουμε εμείς,
+  αλλά αυτά είναι τα καθιερωμένα.
+- **`<c:out>` ή `fn:escapeXml`;** Κάνουν **το ίδιο** escaping (`<` → `&lt;` κ.λπ.). Το `<c:out>` είναι **tag**, οπότε μπαίνει εύκολα
+  ανάμεσα σε HTML tags (`<dd><c:out value="..."/></dd>`). Το `fn:escapeXml` είναι **συνάρτηση** μέσα σε `${...}`, οπότε είναι πιο
+  ευανάγνωστο **μέσα σε attribute** HTML: `value="${fn:escapeXml(student.firstName)}"` αντί για `value="<c:out value='...'/>"`.
 
 ### 2.7 Γιατί οι JSP μπαίνουν στο `WEB-INF/`
 
@@ -458,13 +512,16 @@ public class Student {
 }
 ```
 
-Η κλάση είναι **JavaBean**, και αυτό είναι απαραίτητο για να δουλέψει το EL:
+Η κλάση ακολουθεί τη σύμβαση **JavaBean**:
 
-- έχει **public κενό constructor**,
-- τα πεδία είναι `private` και για κάθε ιδιότητα `xxx` υπάρχει **`getXxx()`** (ή **`isXxx()`** για `boolean`) και `setXxx(...)`.
+- τα πεδία είναι `private` και για κάθε ιδιότητα `xxx` υπάρχει **public `getXxx()`** (ή **`isXxx()`** για `boolean`) και `setXxx(...)`,
+- έχει **public κενό constructor**.
 
-Το `${student.firstName}` δεν διαβάζει το πεδίο `firstName`. Καλεί τη μέθοδο **`getFirstName()`**. Αν λείπει ο getter,
-η JSP βγάζει σφάλμα `PropertyNotFoundException`.
+Για το **EL** το απαραίτητο είναι οι **public getters**. Το `${student.firstName}` δεν διαβάζει το πεδίο `firstName` (που είναι `private`),
+αλλά καλεί τη μέθοδο **`getFirstName()`**. Αν λείπει ο getter (ή δεν είναι `public`), η σελίδα βγάζει HTTP 500 με
+`PropertyNotFoundException: The class 'gr.uniwa.ice.webapp1.model.Student' does not have the property 'firstName'`.
+Ο κενός constructor δεν χρειάζεται για το EL. Είναι μέρος της σύμβασης, γιατί τον χρειάζονται άλλα εργαλεία και frameworks
+που φτιάχνουν αντικείμενα μόνα τους.
 
 ---
 
@@ -530,6 +587,13 @@ public class StudentRepository {
   και `AtomicLong` είναι φτιαγμένα για ταυτόχρονη χρήση.
 - **Στη μνήμη:** τα δεδομένα **χάνονται** όταν σταματήσει ή γίνει redeploy η εφαρμογή. Σε επόμενο εργαστήριο θα τα
   αποθηκεύσουμε σε βάση δεδομένων, αλλάζοντας **μόνο** αυτή την κλάση.
+- **`Optional<Student>`:** το `findById` μπορεί να μη βρει φοιτητή. Αντί να επιστρέψει `null` (και να ξεχάσει κάποιος να το ελέγξει),
+  επιστρέφει ένα `Optional`, ένα «κουτί» που **είτε** περιέχει έναν `Student` **είτε** είναι άδειο. Το `Optional.ofNullable(x)` φτιάχνει
+  άδειο κουτί αν το `x` είναι `null`. Όποιος το χρησιμοποιεί ελέγχει με `isEmpty()`/`isPresent()` και παίρνει την τιμή με `get()`
+  (θα το δούμε στο `StudentViewServlet`).
+- **`findAll()`:** το `ConcurrentHashMap` **δεν** κρατάει σειρά. Γι' αυτό παίρνουμε τις τιμές του ως *stream*
+  (`values().stream()`), τις ταξινομούμε κατά `id` (`sorted(Comparator.comparingLong(Student::getId))`, όπου το `Student::getId` είναι
+  *method reference*, δηλαδή «για κάθε φοιτητή, πάρε το `getId()`») και τις μαζεύουμε σε λίστα (`toList()`, Java 16+).
 
 ---
 
@@ -706,7 +770,7 @@ th, td {
 Τα requests φαίνονται στα Developer Tools (F12 → καρτέλα *Network*).
 
 **Γιατί `${pageContext.request.contextPath}`;** Το URL της εφαρμογής ξεκινά με το *context path* (`/webapp1`),
-που εξαρτάται από το όνομα του `.war` (δείτε README, ενότητα 9.5). Ας δούμε τις επιλογές:
+που εξαρτάται από το όνομα του `.war` (δείτε README, Βήμα 9.5). Ας δούμε τις επιλογές:
 
 | `href=`                                            | Γίνεται                                    | Αποτέλεσμα |
 |----------------------------------------------------|--------------------------------------------|------------|
@@ -773,7 +837,18 @@ th, td {
 ```
 
 Το `<%@ include %>` κάνει κυριολεκτικά **copy-paste** του αρχείου πριν τη μετατροπή σε Servlet. Γι' αυτό
-οι μεταβλητές (`pageTitle`, `ctx`) είναι κοινές ανάμεσα στη σελίδα και στο header.
+οι «μεταβλητές» (`pageTitle`, `ctx`) είναι κοινές ανάμεσα στη σελίδα και στο header. Μερικές λεπτομέρειες που προκύπτουν από αυτό:
+
+- Η σειρά μετράει: η σελίδα πρέπει να δηλώσει το `<%@ taglib prefix="c" ... %>` **πριν** από το `<c:set var="pageTitle">`, και το
+  `<c:set>` πρέπει να είναι **πριν** από το include, για να υπάρχει ήδη ο τίτλος όταν «εκτελεστεί» το header.
+- Το `header.jspf` δηλώνει **κι αυτό** το `taglib c`. Δεν είναι απαραίτητο (η σελίδα το έχει ήδη), αλλά έτσι το αρχείο στέκεται μόνο του
+  και ο editor δεν το βγάζει λάθος. Δύο ίδιες δηλώσεις δεν πειράζουν.
+- Κάθε αρχείο (σελίδα, `.jspf`) διαβάζεται από τον δίσκο **ξεχωριστά**. Γι' αυτό το καθένα δηλώνει το δικό του
+  `pageEncoding="UTF-8"`. Χωρίς αυτό, τα ελληνικά του header (π.χ. «Νέος φοιτητής» στο μενού) θα χαλούσαν.
+- Η κατάληξη **`.jspf`** δείχνει ότι το αρχείο είναι κομμάτι και όχι αυτόνομη σελίδα. Επειδή είναι μέσα στο `WEB-INF/`, δεν ανοίγει από τον browser.
+
+> Υπάρχει και το **`<jsp:include page="..."/>`**, που αντί για copy-paste καλεί το άλλο αρχείο την ώρα της εκτέλεσης, σαν
+> ξεχωριστή σελίδα. Τότε όμως οι «μεταβλητές» page scope **δεν** μοιράζονται. Για header/footer προτιμάμε το `<%@ include %>`.
 
 ---
 
@@ -800,11 +875,36 @@ th, td {
 Το `<%= java.time.LocalDate.now() %>` είναι **έκφραση scriptlet**: εκτελεί Java και τυπώνει το αποτέλεσμα. Το βάλαμε για να δείτε
 πώς μοιάζει. Σε πραγματικό κώδικα, τέτοιες τιμές τις ετοιμάζει το Servlet και η JSP τις δείχνει με `${...}`.
 
+> **▶ Δοκιμή: πρώτη εκτέλεση.** Αυτό είναι το πρώτο σημείο όπου μπορούμε να δούμε αποτέλεσμα: έχουμε `pom.xml`, `web.xml`,
+> CSS, header, footer και μια σελίδα που τα χρησιμοποιεί.
+>
+> ```bash
+> mvn clean package      # πρέπει: BUILD SUCCESS (γίνεται compile και το Student/StudentRepository)
+> mvn jetty:run
+> ```
+>
+> Ανοίξτε <http://localhost:8080/webapp1/>. Πρέπει να δείτε τη **σκούρα μπλε μπάρα** με το μενού, ένα λευκό «χαρτί» στο κέντρο
+> με τον τίτλο «Καλώς ήρθατε» και τη σημερινή ημερομηνία, και τον τίτλο «Αρχική · webapp1» στην καρτέλα του browser.
+> - Χωρίς χρώματα και στυλ; Το CSS δεν φορτώνει: ελέγξτε τη θέση του `style.css` και το `<link>` (ενότητα 5.3, F12 → *Network*).
+> - Τα links «Νέος φοιτητής» και «Φοιτητές» δίνουν **404** προς το παρόν. Είναι φυσιολογικό, γιατί τα Servlets τους δεν υπάρχουν ακόμα.
+
+**Πώς δουλεύουμε από εδώ και πέρα.** Αφήστε το `mvn jetty:run` να τρέχει:
+
+| Τι αλλάξατε | Τι χρειάζεται για να φανεί η αλλαγή |
+|-------------|-------------------------------------|
+| JSP, `.jspf`, CSS, HTML | τίποτα: **refresh** στον browser (μέσα σε λίγα δευτερόλεπτα). Για CSS, Ctrl+F5 λόγω cache |
+| κώδικα **Java** (Servlet, model, …) | **Ctrl+C** και ξανά `mvn jetty:run` (ή αυτόματο reload με `<scan>`, δείτε README «Jetty ή Tomcat;») |
+| `pom.xml` ή `web.xml` | **Ctrl+C** και ξανά `mvn jetty:run` |
+
+Στον **Tomcat** κάθε αλλαγή, ακόμα και σε CSS, χρειάζεται `mvn clean package` και αντιγραφή του νέου `.war` στο `webapps/` (README, Βήμα 9.6).
+Τα δεδομένα στη μνήμη χάνονται σε κάθε restart ή redeploy.
+
 ---
 
 ## 8. Πώς δουλεύει μια HTML φόρμα
 
-Πριν γράψουμε κώδικα, ας δούμε τι κάνει ο browser με μια φόρμα:
+Πριν γράψουμε κώδικα, ας δούμε τι κάνει ο browser με μια φόρμα. Στο παράδειγμα το `action` είναι γραμμένο «καρφωτά»
+(`/webapp1/...`) για να φαίνεται καθαρά το URL. Στον πραγματικό μας κώδικα θα γράψουμε `${ctx}/students/new` (ενότητα 10).
 
 ```html
 <form action="/webapp1/students/new" method="post">
@@ -863,6 +963,20 @@ URL-encoded (`%CE%9C` = «Μ» σε UTF-8). Ο server τα αποκωδικοπ�
 
 - `doGet` → **εμφανίζει** τη φόρμα,
 - `doPost` → **επεξεργάζεται** την υποβολή.
+
+**Πώς επιλέγεται η μέθοδος.** Για κάθε request ο container καλεί τη μέθοδο `service()` της `HttpServlet`, η οποία κοιτάζει τη
+μέθοδο HTTP και καλεί την αντίστοιχη: GET → `doGet`, POST → `doPost`. Αν δεν έχουμε κάνει `@Override` σε μια μέθοδο, η
+προεπιλεγμένη υλοποίηση απαντά **405 Method Not Allowed**. Γι' αυτό το `HelloServlet` του README, που έχει μόνο `doGet`, θα
+απαντούσε 405 σε μια φόρμα με POST.
+
+**Ένα αντικείμενο για όλους.** Ο container φτιάχνει **ένα μόνο** αντικείμενο `StudentFormServlet` και το χρησιμοποιεί για **όλα**
+τα requests, ταυτόχρονα από πολλά threads. Γι' αυτό:
+- το πεδίο `repository` είναι `final` και δείχνει σε thread-safe αντικείμενο, οπότε είναι εντάξει,
+- δεδομένα **ενός** request (π.χ. τα στοιχεία της φόρμας) τα κρατάμε **πάντα σε τοπικές μεταβλητές** της μεθόδου, **ποτέ** σε
+  πεδία της κλάσης. Αλλιώς δύο χρήστες που υποβάλλουν ταυτόχρονα θα «έγραφαν» ο ένας πάνω στα δεδομένα του άλλου.
+
+Οι μέθοδοι δηλώνουν πλέον και `throws ServletException`, γιατί το `forward(...)` μπορεί να πετάξει αυτή την εξαίρεση
+(στο `HelloServlet` αρκούσε το `IOException`).
 
 `src/main/java/gr/uniwa/ice/webapp1/web/StudentFormServlet.java`:
 
@@ -965,11 +1079,28 @@ public class StudentFormServlet extends HttpServlet {
    Έτσι η φόρμα ξαναεμφανίζεται με τα μηνύματα και με ό,τι είχε ήδη γράψει ο χρήστης.
 5. Αν όλα είναι **σωστά**: αποθηκεύει και κάνει **`redirect`** στη σελίδα του φοιτητή.
 
+Μερικές λεπτομέρειες του κώδικα:
+
+- **`trim(...)`** (η βοηθητική μέθοδος στο τέλος): το `getParameter` επιστρέφει `null` αν το πεδίο δεν στάλθηκε καθόλου
+  (π.χ. από `curl` ή από πονηρό χρήστη). Αν γράφαμε κατευθείαν `req.getParameter("email").trim()`, θα παίρναμε
+  `NullPointerException`. Η `trim` μετατρέπει το `null` σε `""` και κόβει τα κενά, οπότε ένα όνομα με **μόνο κενά** απορρίπτεται.
+- **`LinkedHashMap`**: σε αντίθεση με το `HashMap`, **κρατάει τη σειρά** με την οποία προσθέσαμε τα στοιχεία, οπότε τα λάθη μένουν
+  στη σειρά των πεδίων.
+- **`email.matches("[^@\\s]+@[^@\\s]+\\.[^@\\s]+")`**: *regular expression* που σημαίνει «κάποιοι χαρακτήρες χωρίς `@` και κενά, μετά `@`,
+  μετά κάποιοι χαρακτήρες, τελεία, και κάποιοι χαρακτήρες», δηλαδή κάτι σαν `x@y.gr`. Τα `\\` είναι διπλά γιατί μέσα σε String της
+  Java το `\` γράφεται `\\`. Είναι απλός έλεγχος και δεν πιάνει κάθε άκυρο email, αλλά αρκεί εδώ.
+- **`req.getRequestDispatcher(path)`**: επιστρέφει ένα αντικείμενο (`RequestDispatcher`) που μπορεί να «προωθήσει» το τρέχον request
+  σε άλλον πόρο της εφαρμογής, εδώ σε μια JSP, με `.forward(req, resp)`.
+- **`return;` μετά το `forward`**: το `forward` **δεν** τερματίζει τη μέθοδο. Χωρίς το `return`, ο κώδικας θα συνέχιζε και θα
+  αποθήκευε τον λανθασμένο φοιτητή και θα έκανε και redirect. Το δεύτερο θα αποτύγχανε με `IllegalStateException`, γιατί η
+  απάντηση έχει ήδη σταλεί. Κανόνας: **μετά από `forward`, `sendRedirect` ή `sendError`, η μέθοδος πρέπει να τελειώνει.**
+
 ### Forward ή redirect;
 
 | | `req.getRequestDispatcher("/WEB-INF/jsp/x.jsp").forward(req, resp)` | `resp.sendRedirect(url)` |
 |-|------|------|
 | Τι γίνεται | ο server **εσωτερικά** δίνει το **ίδιο** request σε άλλη σελίδα | ο server απαντά «**πήγαινε αλλού**» (HTTP 302) και ο browser κάνει **νέο** GET request |
+| Το path | **μέσα** στην εφαρμογή, **χωρίς** context path: `"/WEB-INF/jsp/x.jsp"`. Το χειρίζεται ο server, που ξέρει ήδη σε ποια εφαρμογή είμαστε | URL για τον **browser**, οπότε **με** context path: `req.getContextPath() + "/students/view?id=1"` |
 | Το URL στον browser | **δεν** αλλάζει | **αλλάζει** |
 | Request attributes | **διατηρούνται** (έτσι η JSP βλέπει τα `errors`) | **χάνονται** (είναι νέο request) |
 | Πότε | για να εμφανίσουμε μια JSP | μετά από **επιτυχημένο POST** |
@@ -992,25 +1123,27 @@ sequenceDiagram
     participant V as StudentViewServlet<br/>/students/view
     participant J as JSP
 
-    U->>F: GET /students/new
+    U->>F: GET /webapp1/students/new
     F->>J: forward → student-form.jsp
     J-->>U: HTML με κενή φόρμα
 
-    U->>F: POST /students/new<br/>firstName=…&email=…
+    U->>F: POST /webapp1/students/new<br/>firstName=…&email=…
     alt υπάρχουν λάθη
         F->>J: forward → student-form.jsp<br/>(attributes: errors, student)
         J-->>U: η φόρμα ξανά, με μηνύματα λάθους
     else όλα σωστά
         F->>R: save(student)
-        F-->>U: 302 Redirect<br/>Location: /students/view?id=1&saved=1
-        U->>V: GET /students/view?id=1&saved=1
+        F-->>U: 302 Redirect<br/>Location: /webapp1/students/view?id=1&saved=1
+        U->>V: GET /webapp1/students/view?id=1&saved=1
         V->>R: findById(1)
         V->>J: forward → student-view.jsp<br/>(attribute: student)
         J-->>U: HTML με τα στοιχεία του φοιτητή
     end
 ```
 
-> Στο redirect χρησιμοποιούμε `req.getContextPath()` (= `/webapp1`) για τον ίδιο λόγο που το χρησιμοποιούμε και στα links του HTML.
+> Στο redirect χρησιμοποιούμε `req.getContextPath()` (= `/webapp1`) για τον ίδιο λόγο που το χρησιμοποιούμε και στα links του HTML:
+> το URL το διαβάζει ο **browser**. Αν βάζαμε στο URL κείμενο του χρήστη (όχι μόνο έναν αριθμό, όπως εδώ), θα έπρεπε να το
+> κωδικοποιήσουμε με `URLEncoder.encode(text, StandardCharsets.UTF_8)`.
 
 ---
 
@@ -1031,7 +1164,7 @@ sequenceDiagram
   <div class="alert alert-error">Η φόρμα έχει λάθη. Διορθώστε τα πεδία με κόκκινο.</div>
 </c:if>
 
-<form action="${ctx}/students/new" method="post" class="form">
+<form action="${ctx}/students/new" method="post">
 
   <div class="field">
     <label for="firstName">Όνομα</label>
@@ -1093,12 +1226,17 @@ sequenceDiagram
   `"><script>...` θα «έσπαγε» το HTML.
 - Το `${errors.firstName}` τυπώνει το μήνυμα λάθους για το πεδίο, αν υπάρχει. Εδώ δεν χρειάζεται escaping,
   γιατί τα μηνύματα τα γράψαμε εμείς στο Servlet.
-- Τα `<option>` φτιάχνονται με `<c:forEach begin="1" end="10">`. Το `selected` μπαίνει σε αυτό που είχε επιλέξει ο χρήστης.
-- Στο checkbox το `checked` μπαίνει αν ο φοιτητής ήταν ήδη `active`.
+- Τα `<option>` φτιάχνονται με `<c:forEach begin="1" end="10">`. Το `selected` μπαίνει σε αυτό που είχε επιλέξει ο χρήστης:
+  το `${student.semester == s ? 'selected' : ''}` είναι EL **μέσα σε ένα HTML tag**. Τυπώνει τη λέξη `selected` (που κάνει το
+  `<option>` επιλεγμένο) ή τίποτα. Στην κενή φόρμα (πρώτο GET) δεν υπάρχει `student`, οπότε καμία επιλογή δεν είναι `selected`
+  και ο browser δείχνει την πρώτη, «1ο». Γι' αυτό το μήνυμα «Επιλέξτε εξάμηνο» του Servlet δεν εμφανίζεται ποτέ από τον browser,
+  μόνο αν κάποιος στείλει άκυρη τιμή με άλλο τρόπο (π.χ. `curl`, ενότητα 13).
+- Στο checkbox το `checked` μπαίνει με τον ίδιο τρόπο, αν ο φοιτητής ήταν ήδη `active`.
 - Το `action="${ctx}/students/new"`: **πού** θα σταλούν τα δεδομένα.
-  - Το **`${ctx}`** είναι μεταβλητή που ορίσαμε στο `header.jspf` (Βήμα 5) με
+  - Το **`${ctx}`** είναι μεταβλητή που ορίσαμε στο `header.jspf` (ενότητα 6) με
     `<c:set var="ctx" value="${pageContext.request.contextPath}"/>`. Περιέχει το **context path** της εφαρμογής,
-    δηλαδή το πρώτο κομμάτι του URL, που προκύπτει από το όνομα του `.war`. Εδώ είναι **`/webapp1`**.
+    δηλαδή το πρώτο κομμάτι του URL (στον Tomcat προκύπτει από το όνομα του `.war`, στο Jetty από το `<contextPath>` του `pom.xml`).
+    Εδώ είναι **`/webapp1`**.
     Η σελίδα «βλέπει» τη μεταβλητή γιατί το header έχει γίνει include στην αρχή της.
   - Άρα ο browser παίρνει `<form action="/webapp1/students/new" ...>` (δείτε το με Ctrl+U) και στέλνει το POST στο
     `http://localhost:8080/webapp1/students/new`, εκεί όπου ακούει το `@WebServlet("/students/new")`.
@@ -1106,6 +1244,16 @@ sequenceDiagram
     Αν πάλι γράφαμε `/webapp1/...` «καρφωτά», θα χαλούσε μόλις μετονομαζόταν το `.war`. Δείτε τον πίνακα στην ενότητα 5.3.
   - Η φόρμα στέλνει στο **ίδιο** URL από το οποίο φορτώθηκε (`/students/new`), αλλά με `POST`, οπότε αυτή τη φορά
     θα κληθεί η `doPost` του Servlet και όχι η `doGet`.
+
+> **▶ Δοκιμή: η φόρμα.** Έχετε πλέον το `StudentFormServlet` και τη `student-form.jsp`. Επειδή προσθέσατε κώδικα Java, σταματήστε
+> το `jetty:run` (Ctrl+C) και ξεκινήστε το ξανά.
+> 1. Ανοίξτε <http://localhost:8080/webapp1/students/new> (ή πατήστε «Νέος φοιτητής» στο μενού). Πρέπει να δείτε τη φόρμα με το στυλ.
+> 2. Γράψτε όνομα **μόνο με κενά**, επώνυμο, ένα email όπως `abc@x` και πατήστε *Αποθήκευση*. Ο browser τα δέχεται (τα κενά
+>    περνούν το `required`), αλλά ο **server** τα απορρίπτει: η φόρμα ξαναεμφανίζεται με κόκκινα μηνύματα κάτω από το όνομα και το
+>    email, και το επώνυμο είναι ακόμα συμπληρωμένο.
+> 3. Διορθώστε τα και πατήστε *Αποθήκευση*. Ο browser θα πάει στο `/webapp1/students/view?id=1&saved=1` και θα πάρετε **404**.
+>    Είναι **φυσιολογικό**: η αποθήκευση έγινε, αλλά η σελίδα προβολής δεν υπάρχει ακόμα (ενότητα 11). Το URL δείχνει ότι το
+>    redirect δούλεψε.
 
 ---
 
@@ -1157,7 +1305,15 @@ public class StudentViewServlet extends HttpServlet {
 }
 ```
 
-Αν το `id` λείπει, δεν είναι αριθμός ή δεν υπάρχει φοιτητής με αυτό το `id`, απαντάμε **404** με `resp.sendError(...)`.
+Πώς δουλεύει:
+
+- **`Long.parseLong(req.getParameter("id"))`**: το `id` έρχεται ως `String` από το URL και το μετατρέπουμε σε αριθμό. Αν **λείπει**
+  (`getParameter` → `null`) ή **δεν είναι αριθμός** (`?id=abc`), το `parseLong` πετάει `NumberFormatException` (ναι, και για `null`).
+  Γι' αυτό ένα μόνο `catch` καλύπτει και τις δύο περιπτώσεις, και τότε θέτουμε `Optional.empty()` (άδειο «κουτί»).
+- **`student.isEmpty()`**: αν δεν βρέθηκε φοιτητής (ή το `id` ήταν άκυρο), απαντάμε **404** με
+  `resp.sendError(HttpServletResponse.SC_NOT_FOUND, "...")`. Ο browser βλέπει τη σελίδα σφάλματος **του server**, που διαφέρει
+  λίγο ανάμεσα σε Jetty και Tomcat, με το μήνυμά μας μέσα. Μετά το `sendError` κάνουμε `return;`, όπως και μετά από `forward`.
+- **`student.get()`**: εδώ ξέρουμε ότι το `Optional` δεν είναι άδειο, οπότε παίρνουμε τον φοιτητή και τον δίνουμε στη JSP.
 
 `src/main/webapp/WEB-INF/jsp/student-view.jsp`:
 
@@ -1193,6 +1349,13 @@ public class StudentViewServlet extends HttpServlet {
 - Το `${param.saved}` διαβάζει την παράμετρο `saved` **από το URL**. Το `StudentFormServlet` την προσθέτει στο redirect
   (`...&saved=1`), ώστε το πράσινο μήνυμα «αποθηκεύτηκε» να εμφανίζεται μόνο αμέσως μετά την αποθήκευση.
 - Ό,τι έγραψε ο χρήστης τυπώνεται με `<c:out>`. Το `id` και το `semester` είναι αριθμοί, οπότε αρκεί το `${...}`.
+
+> **▶ Δοκιμή: αποθήκευση και προβολή.** Ctrl+C και ξανά `mvn jetty:run` (νέος κώδικας Java). Οι φοιτητές της προηγούμενης δοκιμής
+> χάθηκαν με το restart (ήταν στη μνήμη).
+> 1. Συμπληρώστε τη φόρμα σωστά και πατήστε *Αποθήκευση*. Πρέπει να δείτε το **πράσινο** μήνυμα «Ο φοιτητής αποθηκεύτηκε» και
+>    τα στοιχεία που δώσατε, με σωστά ελληνικά.
+> 2. Πατήστε **F5**. Το πράσινο μήνυμα μένει (είναι στο URL, `saved=1`), αλλά **δεν** δημιουργείται δεύτερος φοιτητής.
+> 3. Αλλάξτε στο URL το `id=1` σε `id=999` και μετά σε `id=abc`. Και τα δύο πρέπει να δώσουν **404** «Ο φοιτητής δεν βρέθηκε».
 
 ---
 
@@ -1264,6 +1427,11 @@ public class StudentListServlet extends HttpServlet {
 ```
 
 Το `<c:forEach var="st" items="${students}">` είναι το αντίστοιχο του `for (Student st : students)` της Java.
+Το `<c:choose>`/`<c:when>`/`<c:otherwise>` είναι το `if/else`: αν η λίστα είναι κενή, δείχνουμε μήνυμα αντί για άδειο πίνακα.
+
+> **▶ Δοκιμή: η λίστα.** Ctrl+C και ξανά `mvn jetty:run`. Ανοίξτε «Φοιτητές» από το μενού: πρέπει να δείτε το μήνυμα
+> «Δεν υπάρχουν φοιτητές ακόμα». Προσθέστε δύο φοιτητές και ξανανοίξτε τη λίστα: πρέπει να εμφανίζονται με τη σειρά που τους
+> προσθέσατε, και το όνομα του καθενός να είναι link προς τη σελίδα του. Πλέον **όλα** τα links του μενού δουλεύουν.
 
 ---
 
@@ -1274,27 +1442,47 @@ mvn clean package
 mvn jetty:run
 ```
 
-(ή αντιγράψτε το `target/webapp1.war` στο `webapps/` του Tomcat, όπως στο README, ενότητα 9.4).
+(ή αντιγράψτε το `target/webapp1.war` στο `webapps/` του Tomcat, όπως στο README, Βήμα 9.4).
+
+Αν ακολουθήσατε τις δοκιμές **▶** των προηγούμενων ενοτήτων, τα βασικά τα έχετε ήδη ελέγξει. Εδώ είναι η πλήρης λίστα,
+μαζί με μερικές δοκιμές που δείχνουν **τι γίνεται «από κάτω»**.
 
 Ανοίξτε <http://localhost:8080/webapp1/> και δοκιμάστε:
 
 1. **Κανονική ροή:** *Νέος φοιτητής* → συμπληρώστε με ελληνικά → *Αποθήκευση*. Πρέπει να μεταφερθείτε στη σελίδα του
-   φοιτητή με πράσινο μήνυμα. Παρατηρήστε ότι το URL άλλαξε σε `/students/view?id=1&saved=1` (redirect).
+   φοιτητή με πράσινο μήνυμα. Παρατηρήστε ότι το URL άλλαξε σε `/webapp1/students/view?id=1&saved=1` (redirect).
 2. **Λίστα:** πατήστε *Φοιτητές* στο μενού.
 3. **F5 μετά την αποθήκευση:** δεν δημιουργείται δεύτερος φοιτητής, χάρη στο PRG.
-4. **Validation στον server:** ο browser δεν σας αφήνει να στείλετε κενά πεδία λόγω του `required`. Για να δείτε τον
-   έλεγχο του server, πατήστε F12, σβήστε το `required` από ένα `<input>` στο *Elements*, και υποβάλετε κενό το πεδίο.
-   Εναλλακτικά, από τερματικό:
-   ```bash
-   curl -X POST http://localhost:8080/webapp1/students/new -d firstName= -d lastName=X -d email=bad -d semester=2
-   ```
+4. **Validation στον server:** ο browser δεν σας αφήνει να στείλετε **κενά** πεδία λόγω του `required`. Ο έλεγχος του server
+   όμως φαίνεται εύκολα:
+   - γράψτε ως όνομα **μόνο κενά** (το `required` τα δέχεται, ο server όχι), ή
+   - πατήστε F12, σβήστε το `required` από ένα `<input>` στην καρτέλα *Elements* και υποβάλετε κενό το πεδίο, ή
+   - στείλτε τη φόρμα από τερματικό, χωρίς browser:
+     ```bash
+     curl -X POST http://localhost:8080/webapp1/students/new -d firstName= -d lastName=X -d email=bad -d semester=abc
+     ```
+     Η απάντηση είναι το HTML της φόρμας με τρία μηνύματα λάθους (`<span class="error">...`), ένα για το όνομα, ένα για το email
+     και το «Επιλέξτε εξάμηνο», που από τον browser δεν βγαίνει ποτέ. Με σωστά δεδομένα και `-i` (για να φανούν τα headers)
+     βλέπετε το redirect (ο αριθμός `id` εξαρτάται από το πόσους φοιτητές έχετε ήδη αποθηκεύσει):
+     ```bash
+     curl -i -X POST http://localhost:8080/webapp1/students/new -d firstName=Maria -d lastName=X -d email=m@uniwa.gr -d semester=2
+     ```
+     ```
+     HTTP/1.1 302 Found
+     Location: /webapp1/students/view?id=2&saved=1
+     ```
+   > Στα **Windows (PowerShell)** γράψτε `curl.exe` αντί για `curl`. Στο Windows PowerShell 5.1 το σκέτο `curl` είναι
+   > συντόμευση για το `Invoke-WebRequest`, που δεν καταλαβαίνει αυτές τις παραμέτρους.
 5. **XSS:** δώστε ως όνομα `<b>Test</b>` ή `<script>alert(1)</script>`. Πρέπει να εμφανιστεί **ως κείμενο**, όχι ως έντονο
-   και χωρίς παράθυρο alert. Μετά αλλάξτε προσωρινά ένα `<c:out value="${student.firstName}"/>` σε `${student.firstName}` και ξαναδοκιμάστε.
+   και χωρίς παράθυρο alert. Μετά, στο `student-view.jsp`, αλλάξτε προσωρινά τη γραμμή του ονόματος
+   `<dd><c:out value="${student.firstName}"/></dd>` σε `<dd>${student.firstName}</dd>`, δημιουργήστε ξανά τον ίδιο φοιτητή και δείτε
+   τη διαφορά στη γραμμή «Όνομα». **Επαναφέρετε** μετά το `<c:out>`.
 6. **Developer Tools → Network:** κάντε υποβολή και δείτε το `POST` (καρτέλα *Payload* για τα δεδομένα της φόρμας), την
    απάντηση `302`, το νέο `GET` και το ξεχωριστό request για το `style.css`.
 7. **View Source** (Ctrl+U): δείτε ότι στον browser φτάνει **μόνο HTML**. Δεν φαίνεται ούτε JSP, ούτε EL, ούτε JSTL.
 8. **Απευθείας JSP:** ανοίξτε `http://localhost:8080/webapp1/WEB-INF/jsp/student-form.jsp` → 404.
-9. **Μνήμη:** σταματήστε και ξαναξεκινήστε τον server. Οι φοιτητές χάθηκαν.
+9. **404:** ανοίξτε `/webapp1/students/view?id=999` και `/webapp1/students/view?id=abc`. Και τα δύο δίνουν «Ο φοιτητής δεν βρέθηκε».
+10. **Μνήμη:** σταματήστε και ξαναξεκινήστε τον server. Οι φοιτητές χάθηκαν.
 
 ---
 
@@ -1317,14 +1505,18 @@ mvn jetty:run
 | Πρόβλημα | Αιτία / Λύση |
 |----------|--------------|
 | Τα ελληνικά από τη φόρμα γίνονται `ÎÎ±ÏÎ¯Î±` | Ο server διαβάζει τα δεδομένα ως ISO‑8859‑1. Προσθέστε το `<request-character-encoding>UTF-8</...>` στο `web.xml` (ενότητα 1.2). |
-| Τα ελληνικά της σελίδας εμφανίζονται ως `???` ή `Ã...` | Λείπει το `pageEncoding="UTF-8"` / `charset=UTF-8` από το `<%@ page %>`, ή το αρχείο δεν είναι αποθηκευμένο σε UTF-8. |
+| Τα ελληνικά της σελίδας εμφανίζονται ως `???` ή `ÎÎ­Î¿Ï...` | Λείπει το `pageEncoding="UTF-8"` / `charset=UTF-8` από το `<%@ page %>` της σελίδας **ή** κάποιου `.jspf` (ενότητα 6), ή το αρχείο δεν είναι αποθηκευμένο σε UTF-8. |
 | `The absolute uri: [jakarta.tags.core] cannot be resolved` | Λείπουν οι dependencies της JSTL από το `pom.xml` (ενότητα 1.1), ή κάνατε deploy παλιό `.war`. Τρέξτε `mvn clean package`. |
 | Στη σελίδα φαίνεται κυριολεκτικά `${student.firstName}` | Το `web.xml` είναι πολύ παλιά έκδοση (π.χ. 2.3, από την έκδοση 1.0 του archetype), που απενεργοποιεί το EL. Χρησιμοποιήστε το `web.xml` 6.0 της ενότητας 1.2. |
-| `PropertyNotFoundException: ... does not have the property [firstName]` | Λείπει ο getter `getFirstName()` (ή είναι `private`, ή έχει λάθος όνομα) στο `Student`. |
+| HTTP **500** σε μια σελίδα JSP (`JasperException` ή άλλο exception) | Λάθος στη JSP ή στον κώδικα. Στη σελίδα σφάλματος (και στο τερματικό του `jetty:run`) διαβάστε το **πρώτο μήνυμα** και τη γραμμή `Caused by:`. Για JSP αναφέρεται και η **γραμμή του αρχείου**, π.χ. `/WEB-INF/jsp/student-form.jsp (line: [17], column: [20])`. Συνηθισμένα: tag που δεν κλείνει, λάθος σε `${...}`, ή οι παρακάτω περιπτώσεις. |
+| `The attribute prefix [fn] does not correspond to any imported tag library` | Χρησιμοποιήσατε `${fn:...}` (ή `<c:...>`) χωρίς το αντίστοιχο `<%@ taglib prefix="fn" ... %>` στην αρχή της JSP (ενότητα 2.6). |
+| `PropertyNotFoundException: The class '...Student' does not have the property 'firstName'.` | Λείπει ο getter `getFirstName()` (ή δεν είναι `public`, ή έχει λάθος όνομα) στο `Student`, ή γράψατε λάθος όνομα στο `${student.…}`. |
 | Η σελίδα δεν έχει στυλ / 404 στο `style.css` | Λάθος `href` (θυμηθείτε το `${ctx}`) ή το CSS δεν είναι στο `src/main/webapp/css/`. Ελέγξτε με F12 → Network. |
 | Οι αλλαγές στο CSS δεν φαίνονται | Cache του browser: Ctrl+F5. |
 | Πεδίο της φόρμας είναι πάντα `null` στο Servlet | Το `<input>` δεν έχει `name`, ή το `name` διαφέρει από αυτό στο `getParameter(...)` (κεφαλαία/πεζά μετράνε). |
-| `HTTP 405 Method Not Allowed` | Η φόρμα κάνει `POST` αλλά το Servlet δεν έχει `doPost` (ή ανάποδα). |
+| `HTTP 405 Method Not Allowed` | Η φόρμα κάνει `POST` αλλά το Servlet δεν έχει `doPost` (ή ανάποδα), ενότητα 9. |
+| Σφάλματα compile όπως `duplicate class`, `cannot access ...`, `package ... does not exist` ή `cannot find symbol` για δικές σας κλάσεις | Το αρχείο δεν είναι στον σωστό φάκελο ή το `package` στην πρώτη γραμμή δεν ταιριάζει με τον φάκελο (ενότητα 0). Ελέγξτε και το όνομα του αρχείου: πρέπει να είναι ίδιο με το όνομα της κλάσης (`Student.java` για `class Student`). |
+| Άλλαξα κώδικα Java αλλά δεν βλέπω διαφορά | Με `jetty:run` χρειάζεται Ctrl+C και ξανά `mvn jetty:run` (ενότητα 7). Στον Tomcat, νέο `mvn package` και αντιγραφή του `.war`. |
 | Η φόρμα στέλνει σε λάθος URL (404) | Το `action` δεν έχει το context path. Χρησιμοποιήστε `action="${ctx}/students/new"`. |
 | Μετά από F5 δημιουργούνται διπλοί φοιτητές | Κάνετε `forward` αντί για `redirect` μετά την αποθήκευση. |
 

@@ -1013,7 +1013,9 @@ mkdir src\test\java\gr\uniwa\ice\webapp1
 ```
 
 > **Package = φάκελος.** Η πρώτη γραμμή κάθε αρχείου (`package gr.uniwa.ice.webapp1;`) πρέπει να αντιστοιχεί **ακριβώς** στον φάκελο
-> όπου βρίσκεται το αρχείο (`gr/uniwa/ice/webapp1/`). Αν διαφέρουν, το compile αποτυγχάνει.
+> όπου βρίσκεται το αρχείο (`gr/uniwa/ice/webapp1/`). Αν διαφέρουν, η κλάση καταλήγει σε άλλο package από αυτό που νομίζετε,
+> και οι άλλες κλάσεις που τη χρησιμοποιούν βγάζουν μπερδεμένα σφάλματα (π.χ. `duplicate class` ή `cannot access`).
+> Το VS Code και τα άλλα IDE το επισημαίνουν αμέσως με κόκκινο.
 
 Αρχείο `src/main/java/gr/uniwa/ice/webapp1/HelloServlet.java`:
 
