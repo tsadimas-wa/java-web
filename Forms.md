@@ -14,21 +14,20 @@
 ## Περιεχόμενα
 
 - [0. Τι θα φτιάξουμε](#0-τι-θα-φτιάξουμε)
-- [1. Εισαγωγή στις JSP](#1-εισαγωγή-στις-jsp)
-- [2. Βήμα 1: JSTL στο pom.xml](#2-βήμα-1-jstl-στο-pomxml)
-- [3. Βήμα 2: UTF-8 στο web.xml](#3-βήμα-2-utf-8-στο-webxml)
-- [4. Βήμα 3: Το model: η κλάση Student](#4-βήμα-3-το-model-η-κλάση-student)
-- [5. Βήμα 4: Αποθήκευση στη μνήμη](#5-βήμα-4-αποθήκευση-στη-μνήμη)
-- [6. Βήμα 5: Στατικά αρχεία και CSS](#6-βήμα-5-στατικά-αρχεία-και-css)
-- [7. Βήμα 6: Κοινό header και footer](#7-βήμα-6-κοινό-header-και-footer)
-- [8. Βήμα 7: Πώς δουλεύει μια HTML φόρμα](#8-βήμα-7-πώς-δουλεύει-μια-html-φόρμα)
-- [9. Βήμα 8: Το Servlet της φόρμας](#9-βήμα-8-το-servlet-της-φόρμας)
-- [10. Βήμα 9: Η JSP της φόρμας](#10-βήμα-9-η-jsp-της-φόρμας)
-- [11. Βήμα 10: Η σελίδα του φοιτητή](#11-βήμα-10-η-σελίδα-του-φοιτητή)
-- [12. Βήμα 11: Η λίστα φοιτητών](#12-βήμα-11-η-λίστα-φοιτητών)
-- [13. Βήμα 12: Η αρχική σελίδα](#13-βήμα-12-η-αρχική-σελίδα)
-- [14. Βήμα 13: Εκτέλεση και δοκιμές](#14-βήμα-13-εκτέλεση-και-δοκιμές)
-- [15. Σύνοψη: parameters, attributes, forward, redirect](#15-σύνοψη-parameters-attributes-forward-redirect)
+- [1. Βήμα 1: Ρύθμιση του project: pom.xml και web.xml](#1-βήμα-1-ρύθμιση-του-project-pomxml-και-webxml)
+- [2. Εισαγωγή στις JSP](#2-εισαγωγή-στις-jsp)
+- [3. Βήμα 2: Το model: η κλάση Student](#3-βήμα-2-το-model-η-κλάση-student)
+- [4. Βήμα 3: Αποθήκευση στη μνήμη](#4-βήμα-3-αποθήκευση-στη-μνήμη)
+- [5. Βήμα 4: Στατικά αρχεία και CSS](#5-βήμα-4-στατικά-αρχεία-και-css)
+- [6. Βήμα 5: Κοινό header και footer](#6-βήμα-5-κοινό-header-και-footer)
+- [7. Βήμα 6: Πώς δουλεύει μια HTML φόρμα](#7-βήμα-6-πώς-δουλεύει-μια-html-φόρμα)
+- [8. Βήμα 7: Το Servlet της φόρμας](#8-βήμα-7-το-servlet-της-φόρμας)
+- [9. Βήμα 8: Η JSP της φόρμας](#9-βήμα-8-η-jsp-της-φόρμας)
+- [10. Βήμα 9: Η σελίδα του φοιτητή](#10-βήμα-9-η-σελίδα-του-φοιτητή)
+- [11. Βήμα 10: Η λίστα φοιτητών](#11-βήμα-10-η-λίστα-φοιτητών)
+- [12. Βήμα 11: Η αρχική σελίδα](#12-βήμα-11-η-αρχική-σελίδα)
+- [13. Βήμα 12: Εκτέλεση και δοκιμές](#13-βήμα-12-εκτέλεση-και-δοκιμές)
+- [14. Σύνοψη: parameters, attributes, forward, redirect](#14-σύνοψη-parameters-attributes-forward-redirect)
 - [Συχνά προβλήματα](#συχνά-προβλήματα)
 - [Ασκήσεις](#ασκήσεις)
 
@@ -76,9 +75,190 @@ webapp1/
 
 ---
 
-## 1. Εισαγωγή στις JSP
+## 1. Βήμα 1: Ρύθμιση του project: `pom.xml` και `web.xml`
 
-### 1.1 Το πρόβλημα: HTML μέσα σε Java
+Ξεκινάμε από το project `webapp1` του README και αλλάζουμε δύο αρχεία ρυθμίσεων. Σε σχέση με το README
+**προστίθενται** μόνο:
+
+- στο `pom.xml`: οι dependencies της **JSTL** (βιβλιοθήκη tags για τις JSP),
+- στο `web.xml`: η κωδικοποίηση **UTF-8** για requests και responses.
+
+Παρακάτω είναι τα **πλήρη** αρχεία, όπως πρέπει να είναι στο τέλος.
+
+### 1.1 Το `pom.xml`
+
+`webapp1/pom.xml`:
+
+```xml
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>gr.uniwa.ice</groupId>
+  <artifactId>webapp1</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <packaging>war</packaging>
+  <name>webapp1 Maven Webapp</name>
+
+  <properties>
+    <!-- Έκδοση Java για την οποία γίνεται compile -->
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <dependencies>
+    <!-- Servlet API: provided, γιατί το παρέχει ο server (Tomcat/Jetty) -->
+    <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <version>6.0.0</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <!-- JSTL: βιβλιοθήκη tags για τις JSP σελίδες (<c:if>, <c:forEach>, <c:out>, ...) -->
+    <dependency>
+      <groupId>jakarta.servlet.jsp.jstl</groupId>
+      <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+      <version>3.0.2</version>
+      <exclusions>
+        <!-- το Expression Language (EL) το παρέχει ήδη ο server -->
+        <exclusion>
+          <groupId>jakarta.el</groupId>
+          <artifactId>jakarta.el-api</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.glassfish.web</groupId>
+      <artifactId>jakarta.servlet.jsp.jstl</artifactId>
+      <version>3.0.1</version>
+    </dependency>
+
+    <!-- JUnit 5 για unit tests -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>5.11.4</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <!-- Όνομα του παραγόμενου αρχείου: target/webapp1.war -->
+    <finalName>webapp1</finalName>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.13.0</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.5.2</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-war-plugin</artifactId>
+        <version>3.4.0</version>
+      </plugin>
+
+      <!-- Jetty: ενσωματωμένος web server για εκτέλεση με "mvn jetty:run" -->
+      <plugin>
+        <groupId>org.eclipse.jetty.ee10</groupId>
+        <artifactId>jetty-ee10-maven-plugin</artifactId>
+        <version>12.0.16</version>
+        <configuration>
+          <webApp>
+            <contextPath>/webapp1</contextPath>
+          </webApp>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
+```
+
+Τι κάνει κάθε κομμάτι:
+
+| Κομμάτι | Τι σημαίνει |
+|---------|-------------|
+| `groupId` / `artifactId` / `version` | οι «συντεταγμένες» του project (README, Μέρος Α §3) |
+| `<packaging>war</packaging>` | το αποτέλεσμα του `mvn package` είναι **web εφαρμογή** (`.war`) και όχι `.jar` |
+| `maven.compiler.release` | για ποια έκδοση Java γίνεται compile (21). Αν έχετε JDK 17, βάλτε `17` |
+| `project.build.sourceEncoding` | τα αρχεία πηγαίου κώδικα είναι σε **UTF-8**, ώστε να δουλεύουν τα ελληνικά μέσα στα `.java` |
+| `jakarta.servlet-api`, scope **`provided`** | οι κλάσεις `HttpServlet`, `HttpServletRequest` κ.λπ. Χρειάζονται για το compile, αλλά **δεν** μπαίνουν στο `.war`, γιατί τις έχει ήδη ο server |
+| `jakarta.servlet.jsp.jstl-api` + `jakarta.servlet.jsp.jstl` | **νέο:** η JSTL (`<c:if>`, `<c:forEach>`, `<c:out>`, …). Το πρώτο είναι το **API** (interfaces) και το δεύτερο μια **υλοποίηση** (της Glassfish). Scope `compile` (το default), γιατί ο Tomcat **δεν** έχει JSTL, άρα πρέπει να μπουν στο `WEB-INF/lib/` του `.war` |
+| `<exclusions>` → `jakarta.el-api` | **νέο:** το `jstl-api` φέρνει μαζί του (transitive) και το API του **Expression Language**. Αυτό όμως το έχει ήδη ο server, και ένα δεύτερο αντίγραφο στο `.war` μπορεί να προκαλέσει συγκρούσεις. Το εξαιρούμε |
+| `junit-jupiter`, scope **`test`** | JUnit 5, μόνο για τα tests. Δεν μπαίνει στο `.war` |
+| `<finalName>webapp1</finalName>` | το αρχείο θα λέγεται `target/webapp1.war`, άρα το URL θα είναι `/webapp1/` (README §9.5) |
+| `maven-compiler/surefire/war-plugin` | τα plugins που κάνουν compile, τρέχουν τα tests και φτιάχνουν το `.war`. Δηλώνουμε **συγκεκριμένες εκδόσεις** ώστε το build να είναι ίδιο σε όλους τους υπολογιστές |
+| `jetty-ee10-maven-plugin` | ενσωματωμένος server για `mvn jetty:run`. Το `<contextPath>` κάνει το URL ίδιο με του Tomcat (`/webapp1`) |
+
+Ελέγξτε ότι όλα είναι σωστά:
+
+```bash
+mvn dependency:tree      # πρέπει να φαίνονται τα δύο jstl artifacts και ΟΧΙ το jakarta.el-api
+mvn clean package        # BUILD SUCCESS
+jar tf target/webapp1.war | grep WEB-INF/lib
+```
+
+```
+WEB-INF/lib/jakarta.servlet.jsp.jstl-3.0.1.jar
+WEB-INF/lib/jakarta.servlet.jsp.jstl-api-3.0.2.jar
+```
+
+> Μετά από αλλαγή στο `pom.xml`, το VS Code μπορεί να ρωτήσει αν θέλετε να ενημερωθεί το project. Απαντήστε **Yes / Always**.
+> Αν δεν ρωτήσει: Command Palette (Ctrl+Shift+P) → *Java: Reload Projects*. Στο IntelliJ: κουμπί *Load Maven Changes*.
+
+### 1.2 Το `web.xml`
+
+`webapp1/src/main/webapp/WEB-INF/web.xml`:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee
+                             https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
+         version="6.0">
+  <display-name>webapp1</display-name>
+
+  <!-- Τα δεδομένα των φορμών (και οι απαντήσεις) είναι σε UTF-8, ώστε να δουλεύουν τα ελληνικά -->
+  <request-character-encoding>UTF-8</request-character-encoding>
+  <response-character-encoding>UTF-8</response-character-encoding>
+
+  <welcome-file-list>
+    <welcome-file>index.jsp</welcome-file>
+  </welcome-file-list>
+</web-app>
+```
+
+| Κομμάτι | Τι σημαίνει |
+|---------|-------------|
+| `xmlns="https://jakarta.ee/..."`, `version="6.0"` | το αρχείο ακολουθεί την προδιαγραφή **Servlet 6.0** (Jakarta EE 10). **Σημαντικό:** το archetype φτιάχνει `web.xml` 4.0 (Java EE, εποχή `javax.*`). Το αντικαθιστούμε με την έκδοση που ταιριάζει στον κώδικα και στους servers μας. Με πολύ παλιά αρχεία, όπως το 2.3 της έκδοσης 1.0 του archetype, ο server θεωρεί την εφαρμογή «παλιά» και **απενεργοποιεί το Expression Language**, οπότε στη σελίδα θα βλέπατε κυριολεκτικά `${student.firstName}` |
+| `<display-name>` | ένα όνομα για την εφαρμογή (φαίνεται π.χ. στον Tomcat Manager) |
+| `<request-character-encoding>` | **νέο:** τα δεδομένα που στέλνει ο browser (φόρμες) διαβάζονται ως **UTF-8** (εξήγηση παρακάτω) |
+| `<response-character-encoding>` | **νέο:** οι απαντήσεις μας στέλνονται σε UTF-8 |
+| `<welcome-file-list>` | ποιο αρχείο δείχνεται όταν ζητηθεί σκέτος φάκελος, π.χ. `/webapp1/` → `index.jsp` |
+
+> **Γιατί χρειάζεται το UTF-8;** Η προδιαγραφή Servlet ορίζει ως default κωδικοποίηση το ISO‑8859‑1. Με αυτήν, το «Μαρία» που
+> έστειλε η φόρμα διαβάζεται ως `ÎÎ±ÏÎ¯Î±`. Οι σύγχρονοι servers (Tomcat 10.1/11, Jetty 12) έχουν ήδη UTF‑8 στις
+> δικές τους ρυθμίσεις, οπότε εκεί θα δουλέψει και χωρίς αυτό. Το δηλώνουμε όμως **ρητά στην εφαρμογή**, ώστε να μην
+> εξαρτάται από το πώς έχει ρυθμιστεί ο κάθε server. Η παλιά λύση ήταν να καλείται `req.setCharacterEncoding("UTF-8")`
+> στην αρχή **κάθε** `doPost`.
+
+**Τι δεν υπάρχει στο `web.xml`:** δηλώσεις servlets (`<servlet>`, `<servlet-mapping>`). Παλιότερα κάθε Servlet έπρεπε να
+δηλωθεί εδώ, μαζί με το URL του. Σήμερα αρκεί το annotation **`@WebServlet("/students/new")`** πάνω στην κλάση, και ο server
+βρίσκει μόνος του τα Servlets κατά την εκκίνηση. Το ίδιο ισχύει και για τα JSP: δεν δηλώνονται πουθενά.
+
+---
+
+## 2. Εισαγωγή στις JSP
+
+### 2.1 Το πρόβλημα: HTML μέσα σε Java
 
 Στο `HelloServlet` του README φτιάξαμε HTML με `out.println(...)`:
 
@@ -91,7 +271,7 @@ out.println("</body></html>");
 Για μία γραμμή είναι εντάξει. Για μια πραγματική σελίδα με φόρμα, πίνακες και CSS όμως γίνεται
 δυσανάγνωστο: το HTML είναι κομμένο σε strings, δεν έχει χρωματισμό στον editor, και κάθε αλλαγή θέλει recompile.
 
-### 1.2 Η λύση: JSP (Jakarta Server Pages)
+### 2.2 Η λύση: JSP (Jakarta Server Pages)
 
 Μια **JSP** είναι ένα αρχείο **HTML** μέσα στο οποίο βάζουμε λίγα **δυναμικά κομμάτια**:
 
@@ -106,7 +286,7 @@ out.println("</body></html>");
 > Στον Tomcat μπορείτε να δείτε τον κώδικα Java που παράγεται στο
 > `$CATALINA_HOME/work/Catalina/localhost/webapp1/org/apache/jsp/...`.
 
-### 1.3 Ποιος κάνει τι: Model–View–Controller (MVC)
+### 2.3 Ποιος κάνει τι: Model–View–Controller (MVC)
 
 Χωρίζουμε την εφαρμογή σε τρεις ρόλους:
 
@@ -135,7 +315,7 @@ flowchart LR
 Ο κανόνας: **λογική στο Servlet, HTML στη JSP.** Η JSP δεν πρέπει να «αποφασίζει» τίποτα σημαντικό,
 μόνο να εμφανίζει ό,τι της έδωσε το Servlet.
 
-### 1.4 Από τι αποτελείται μια JSP
+### 2.4 Από τι αποτελείται μια JSP
 
 | Στοιχείο              | Σύνταξη                                         | Παράδειγμα / Χρήση                                       |
 |-----------------------|-------------------------------------------------|----------------------------------------------------------|
@@ -163,7 +343,7 @@ flowchart LR
 Θα το δείτε σε πολλά παλιά tutorials. Αποφεύγεται γιατί ανακατεύει ξανά λογική και HTML. Εδώ θα χρησιμοποιήσουμε
 **μόνο μία** έκφραση `<%= ... %>` στο `index.jsp`, για να δείτε πώς μοιάζει. Για όλα τα υπόλοιπα υπάρχουν EL και JSTL.
 
-### 1.5 Expression Language (EL): `${...}`
+### 2.5 Expression Language (EL): `${...}`
 
 Με το EL διαβάζουμε δεδομένα που μας έδωσε το Servlet:
 
@@ -203,7 +383,7 @@ ${pageContext.request.contextPath}   <%-- "/webapp1" --%>
 > **Ό,τι έχει γράψει ο χρήστης το τυπώνουμε πάντα με `<c:out value="${...}"/>`** (ή με `${fn:escapeXml(...)}`
 > μέσα σε attributes HTML). Τα δικά μας δεδομένα (αριθμούς, `id`, δικά μας μηνύματα) μπορούμε να τα τυπώσουμε με σκέτο `${...}`.
 
-### 1.6 JSTL: συνθήκες και επαναλήψεις χωρίς Java
+### 2.6 JSTL: συνθήκες και επαναλήψεις χωρίς Java
 
 Η **JSTL** (Jakarta Standard Tag Library) δίνει έτοιμα tags:
 
@@ -226,7 +406,7 @@ ${pageContext.request.contextPath}   <%-- "/webapp1" --%>
 ${fn:escapeXml(student.firstName)}                             <%-- ασφαλής εκτύπωση ως συνάρτηση --%>
 ```
 
-### 1.7 Γιατί οι JSP μπαίνουν στο `WEB-INF/`
+### 2.7 Γιατί οι JSP μπαίνουν στο `WEB-INF/`
 
 Ό,τι βρίσκεται στο `src/main/webapp/` είναι **προσβάσιμο απευθείας** από τον browser, **εκτός** από τον φάκελο `WEB-INF/`.
 Βάζουμε τις JSP στο `WEB-INF/jsp/` ώστε να **μην μπορεί κανείς να τις ανοίξει απευθείας**
@@ -235,68 +415,7 @@ ${fn:escapeXml(student.firstName)}                             <%-- ασφαλή
 
 ---
 
-## 2. Βήμα 1: JSTL στο `pom.xml`
-
-Ο Tomcat **δεν** περιλαμβάνει τη JSTL, οπότε την προσθέτουμε στις dependencies (μετά το `jakarta.servlet-api`):
-
-```xml
-<!-- JSTL: βιβλιοθήκη tags για τις JSP σελίδες (<c:if>, <c:forEach>, <c:out>, ...) -->
-<dependency>
-  <groupId>jakarta.servlet.jsp.jstl</groupId>
-  <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
-  <version>3.0.2</version>
-  <exclusions>
-    <!-- το Expression Language (EL) το παρέχει ήδη ο server -->
-    <exclusion>
-      <groupId>jakarta.el</groupId>
-      <artifactId>jakarta.el-api</artifactId>
-    </exclusion>
-  </exclusions>
-</dependency>
-<dependency>
-  <groupId>org.glassfish.web</groupId>
-  <artifactId>jakarta.servlet.jsp.jstl</artifactId>
-  <version>3.0.1</version>
-</dependency>
-```
-
-- Χρειάζονται **δύο** artifacts: το **API** (τα interfaces) και μια **υλοποίηση** (εδώ της Glassfish).
-- Scope `compile` (το default), γιατί πρέπει να μπουν στο `WEB-INF/lib/` του `.war`.
-- Το `<exclusion>`: το `jstl-api` φέρνει ως transitive dependency και το `jakarta.el-api` (το API του EL).
-  Το EL όμως το έχει ήδη ο server, και ένα δεύτερο αντίγραφο μέσα στο `.war` μπορεί να προκαλέσει συγκρούσεις.
-  Δείτε το μόνοι σας με `mvn dependency:tree` πριν και μετά το exclusion.
-
-## 3. Βήμα 2: UTF-8 στο `web.xml`
-
-Για να έρχονται σωστά τα **ελληνικά** που γράφει ο χρήστης στη φόρμα, λέμε στον server ότι τα requests
-και τα responses είναι σε UTF-8. Το `src/main/webapp/WEB-INF/web.xml` γίνεται:
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<web-app xmlns="https://jakarta.ee/xml/ns/jakartaee"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee
-                             https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd"
-         version="6.0">
-  <display-name>webapp1</display-name>
-
-  <!-- Τα δεδομένα των φορμών (και οι απαντήσεις) είναι σε UTF-8, ώστε να δουλεύουν τα ελληνικά -->
-  <request-character-encoding>UTF-8</request-character-encoding>
-  <response-character-encoding>UTF-8</response-character-encoding>
-
-  <welcome-file-list>
-    <welcome-file>index.jsp</welcome-file>
-  </welcome-file-list>
-</web-app>
-```
-
-> **Γιατί χρειάζεται;** Η προδιαγραφή Servlet ορίζει ως default κωδικοποίηση το ISO‑8859‑1. Με αυτήν, το «Μαρία» που
-> έστειλε η φόρμα διαβάζεται ως `ÎÎ±ÏÎ¯Î±`. Οι σύγχρονοι servers (Tomcat 10.1/11, Jetty 12) έχουν ήδη UTF‑8 στις
-> δικές τους ρυθμίσεις, οπότε εκεί θα δουλέψει και χωρίς αυτό. Το δηλώνουμε όμως **ρητά στην εφαρμογή**, ώστε να μην
-> εξαρτάται από το πώς έχει ρυθμιστεί ο κάθε server. Η παλιά λύση ήταν να καλείται `req.setCharacterEncoding("UTF-8")`
-> στην αρχή **κάθε** `doPost`.
-
-## 4. Βήμα 3: Το model: η κλάση `Student`
+## 3. Βήμα 2: Το model: η κλάση `Student`
 
 `src/main/java/gr/uniwa/ice/webapp1/model/Student.java`:
 
@@ -348,7 +467,7 @@ public class Student {
 Το `${student.firstName}` δεν διαβάζει το πεδίο `firstName`. Καλεί τη μέθοδο **`getFirstName()`**. Αν λείπει ο getter,
 η JSP βγάζει σφάλμα `PropertyNotFoundException`.
 
-## 5. Βήμα 4: Αποθήκευση στη μνήμη
+## 4. Βήμα 3: Αποθήκευση στη μνήμη
 
 `src/main/java/gr/uniwa/ice/webapp1/repository/StudentRepository.java`:
 
@@ -413,9 +532,9 @@ public class StudentRepository {
 
 ---
 
-## 6. Βήμα 5: Στατικά αρχεία και CSS
+## 5. Βήμα 4: Στατικά αρχεία και CSS
 
-### 6.1 Πού μπαίνουν τα αρχεία: `webapp` vs `resources` vs `WEB-INF`
+### 5.1 Πού μπαίνουν τα αρχεία: `webapp` vs `resources` vs `WEB-INF`
 
 Αυτό μπερδεύει συχνά, γιατί υπάρχουν **τρία** διαφορετικά μέρη για «αρχεία που δεν είναι Java»:
 
@@ -441,7 +560,7 @@ src/main/webapp/css/style.css   ──mvn package──▶   webapp1.war!/css/st
 Τα στατικά αρχεία τα σερβίρει **ο ίδιος ο server** (το λεγόμενο *default servlet*), χωρίς να γράψουμε κώδικα.
 Με τον ίδιο τρόπο δουλεύουν και οι εικόνες (`src/main/webapp/images/logo.png` → `/webapp1/images/logo.png`) και τα αρχεία JavaScript.
 
-### 6.2 Το CSS
+### 5.2 Το CSS
 
 Δημιουργήστε το `src/main/webapp/css/style.css`:
 
@@ -574,7 +693,7 @@ th, td {
 }
 ```
 
-### 6.3 Σύνδεση του CSS στο HTML
+### 5.3 Σύνδεση του CSS στο HTML
 
 Στο `<head>` της σελίδας βάζουμε:
 
@@ -600,7 +719,7 @@ th, td {
 
 > **Δεν βλέπετε τις αλλαγές στο CSS;** Ο browser κρατάει τα CSS στην cache. Κάντε **Ctrl+F5** (ή Ctrl+Shift+R).
 
-## 7. Βήμα 6: Κοινό header και footer
+## 6. Βήμα 5: Κοινό header και footer
 
 Όλες οι σελίδες έχουν το ίδιο `<head>` (με το CSS), την ίδια μπάρα πλοήγησης και το ίδιο footer. Αντί να τα
 αντιγράφουμε, τα βάζουμε σε δύο αρχεία **`.jspf`** (*JSP fragment*: κομμάτι σελίδας, όχι ολόκληρη σελίδα).
@@ -610,6 +729,7 @@ th, td {
 ```jsp
 <%@ page pageEncoding="UTF-8" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%-- ctx = το context path της εφαρμογής, π.χ. "/webapp1". Το χρησιμοποιούμε σε ΟΛΑ τα links, src και action. --%>
 <c:set var="ctx" value="${pageContext.request.contextPath}"/>
 <!DOCTYPE html>
 <html lang="el">
@@ -654,7 +774,7 @@ th, td {
 
 ---
 
-## 8. Βήμα 7: Πώς δουλεύει μια HTML φόρμα
+## 7. Βήμα 6: Πώς δουλεύει μια HTML φόρμα
 
 Πριν γράψουμε κώδικα, ας δούμε τι κάνει ο browser με μια φόρμα:
 
@@ -709,7 +829,7 @@ URL-encoded (`%CE%9C` = «Μ» σε UTF-8). Ο server τα αποκωδικοπ�
 
 ---
 
-## 9. Βήμα 8: Το Servlet της φόρμας
+## 8. Βήμα 7: Το Servlet της φόρμας
 
 Ένα Servlet για ένα URL (`/students/new`) με **δύο** μεθόδους:
 
@@ -864,7 +984,7 @@ sequenceDiagram
 
 > Στο redirect χρησιμοποιούμε `req.getContextPath()` (= `/webapp1`) για τον ίδιο λόγο που το χρησιμοποιούμε και στα links του HTML.
 
-## 10. Βήμα 9: Η JSP της φόρμας
+## 9. Βήμα 8: Η JSP της φόρμας
 
 `src/main/webapp/WEB-INF/jsp/student-form.jsp`:
 
@@ -945,9 +1065,19 @@ sequenceDiagram
   γιατί τα μηνύματα τα γράψαμε εμείς στο Servlet.
 - Τα `<option>` φτιάχνονται με `<c:forEach begin="1" end="10">`. Το `selected` μπαίνει σε αυτό που είχε επιλέξει ο χρήστης.
 - Στο checkbox το `checked` μπαίνει αν ο φοιτητής ήταν ήδη `active`.
-- Το `action="${ctx}/students/new"`: η φόρμα στέλνει στο **ίδιο** URL, αλλά με `POST`, οπότε θα κληθεί η `doPost`.
+- Το `action="${ctx}/students/new"`: **πού** θα σταλούν τα δεδομένα.
+  - Το **`${ctx}`** είναι μεταβλητή που ορίσαμε στο `header.jspf` (Βήμα 5) με
+    `<c:set var="ctx" value="${pageContext.request.contextPath}"/>`. Περιέχει το **context path** της εφαρμογής,
+    δηλαδή το πρώτο κομμάτι του URL, που προκύπτει από το όνομα του `.war`. Εδώ είναι **`/webapp1`**.
+    Η σελίδα «βλέπει» τη μεταβλητή γιατί το header έχει γίνει include στην αρχή της.
+  - Άρα ο browser παίρνει `<form action="/webapp1/students/new" ...>` (δείτε το με Ctrl+U) και στέλνει το POST στο
+    `http://localhost:8080/webapp1/students/new`, εκεί όπου ακούει το `@WebServlet("/students/new")`.
+  - Γιατί όχι σκέτο `action="/students/new"`; Γιατί θα πήγαινε στο `http://localhost:8080/students/new`, χωρίς το `/webapp1` → **404**.
+    Αν πάλι γράφαμε `/webapp1/...` «καρφωτά», θα χαλούσε μόλις μετονομαζόταν το `.war`. Δείτε τον πίνακα στην ενότητα 5.3.
+  - Η φόρμα στέλνει στο **ίδιο** URL από το οποίο φορτώθηκε (`/students/new`), αλλά με `POST`, οπότε αυτή τη φορά
+    θα κληθεί η `doPost` του Servlet και όχι η `doGet`.
 
-## 11. Βήμα 10: Η σελίδα του φοιτητή
+## 10. Βήμα 9: Η σελίδα του φοιτητή
 
 Το Servlet παίρνει το `id` από το URL (`/students/view?id=1`), βρίσκει τον φοιτητή και τον δίνει στη JSP.
 
@@ -1032,7 +1162,7 @@ public class StudentViewServlet extends HttpServlet {
   (`...&saved=1`), ώστε το πράσινο μήνυμα «αποθηκεύτηκε» να εμφανίζεται μόνο αμέσως μετά την αποθήκευση.
 - Ό,τι έγραψε ο χρήστης τυπώνεται με `<c:out>`. Το `id` και το `semester` είναι αριθμοί, οπότε αρκεί το `${...}`.
 
-## 12. Βήμα 11: Η λίστα φοιτητών
+## 11. Βήμα 10: Η λίστα φοιτητών
 
 `src/main/java/gr/uniwa/ice/webapp1/web/StudentListServlet.java`:
 
@@ -1101,7 +1231,7 @@ public class StudentListServlet extends HttpServlet {
 
 Το `<c:forEach var="st" items="${students}">` είναι το αντίστοιχο του `for (Student st : students)` της Java.
 
-## 13. Βήμα 12: Η αρχική σελίδα
+## 12. Βήμα 11: Η αρχική σελίδα
 
 Αντικαταστήστε το `src/main/webapp/index.jsp` (το «Hello World!» του archetype):
 
@@ -1126,7 +1256,7 @@ public class StudentListServlet extends HttpServlet {
 
 ---
 
-## 14. Βήμα 13: Εκτέλεση και δοκιμές
+## 13. Βήμα 12: Εκτέλεση και δοκιμές
 
 ```bash
 mvn clean package
@@ -1155,7 +1285,7 @@ mvn jetty:run
 8. **Απευθείας JSP:** ανοίξτε `http://localhost:8080/webapp1/WEB-INF/jsp/student-form.jsp` → 404.
 9. **Μνήμη:** σταματήστε και ξαναξεκινήστε τον server. Οι φοιτητές χάθηκαν.
 
-## 15. Σύνοψη: parameters, attributes, forward, redirect
+## 14. Σύνοψη: parameters, attributes, forward, redirect
 
 | Έννοια | Από πού έρχεται | Τύπος | Στη Java | Στη JSP |
 |--------|-----------------|-------|----------|---------|
@@ -1173,10 +1303,10 @@ mvn jetty:run
 
 | Πρόβλημα | Αιτία / Λύση |
 |----------|--------------|
-| Τα ελληνικά από τη φόρμα γίνονται `ÎÎ±ÏÎ¯Î±` | Ο server διαβάζει τα δεδομένα ως ISO‑8859‑1. Προσθέστε το `<request-character-encoding>UTF-8</...>` στο `web.xml` (Βήμα 2). |
+| Τα ελληνικά από τη φόρμα γίνονται `ÎÎ±ÏÎ¯Î±` | Ο server διαβάζει τα δεδομένα ως ISO‑8859‑1. Προσθέστε το `<request-character-encoding>UTF-8</...>` στο `web.xml` (ενότητα 1.2). |
 | Τα ελληνικά της σελίδας εμφανίζονται ως `???` ή `Ã...` | Λείπει το `pageEncoding="UTF-8"` / `charset=UTF-8` από το `<%@ page %>`, ή το αρχείο δεν είναι αποθηκευμένο σε UTF-8. |
-| `The absolute uri: [jakarta.tags.core] cannot be resolved` | Λείπουν οι dependencies της JSTL (Βήμα 1), ή κάνατε deploy παλιό `.war`. Τρέξτε `mvn clean package`. |
-| Στη σελίδα φαίνεται κυριολεκτικά `${student.firstName}` | Το `web.xml` είναι η παλιά έκδοση 2.3 του archetype (απενεργοποιεί το EL). Χρησιμοποιήστε το `web.xml` 6.0. |
+| `The absolute uri: [jakarta.tags.core] cannot be resolved` | Λείπουν οι dependencies της JSTL από το `pom.xml` (ενότητα 1.1), ή κάνατε deploy παλιό `.war`. Τρέξτε `mvn clean package`. |
+| Στη σελίδα φαίνεται κυριολεκτικά `${student.firstName}` | Το `web.xml` είναι πολύ παλιά έκδοση (π.χ. 2.3, από την έκδοση 1.0 του archetype), που απενεργοποιεί το EL. Χρησιμοποιήστε το `web.xml` 6.0 της ενότητας 1.2. |
 | `PropertyNotFoundException: ... does not have the property [firstName]` | Λείπει ο getter `getFirstName()` (ή είναι `private`, ή έχει λάθος όνομα) στο `Student`. |
 | Η σελίδα δεν έχει στυλ / 404 στο `style.css` | Λάθος `href` (θυμηθείτε το `${ctx}`) ή το CSS δεν είναι στο `src/main/webapp/css/`. Ελέγξτε με F12 → Network. |
 | Οι αλλαγές στο CSS δεν φαίνονται | Cache του browser: Ctrl+F5. |

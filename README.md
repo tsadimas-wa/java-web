@@ -310,6 +310,21 @@ war.war();
 | `default`  | build: compile, test, πακετάρισμα, …     | `validate` → `compile` → … → `deploy` (βλ. παρακάτω)   |
 | `site`     | παραγωγή ιστοσελίδας τεκμηρίωσης          | `pre-site` → **`site`** → `post-site` → `site-deploy`  |
 
+**Τι είναι προκαθορισμένο και τι όχι:**
+
+- **Προκαθορισμένα** (ίδια σε **κάθε** Maven project): τα τρία lifecycles, οι phases τους και η **σειρά** τους.
+  Είναι ενσωματωμένα στο ίδιο το Maven. Δεν τα γράφουμε στο `pom.xml` και δεν αλλάζουμε τη σειρά τους.
+- **Αλλάζει από project σε project:** **ποια goals** τρέχουν σε κάθε phase. Αυτό το καθορίζει κυρίως το `<packaging>`
+  (π.χ. στη phase `package`: `jar:jar` για `jar`, `war:war` για `war`) και δευτερευόντως τα plugins που δηλώνουμε στο `pom.xml`.
+  Οι phases δηλαδή είναι σαν τις **στάσεις μιας σταθερής διαδρομής**. Το project αποφασίζει τι θα γίνει σε κάθε στάση.
+- Το όνομα **`default`** σημαίνει απλώς «**το κύριο lifecycle**, αυτό που κάνει το build» (στην τεκμηρίωση λέγεται και
+  *build lifecycle*). **Δεν** σημαίνει «προεπιλογή που τρέχει αν δεν ζητήσουμε κάτι». Αν γράψετε σκέτο `mvn` χωρίς phase, δεν
+  τρέχει τίποτα. Βγαίνει σφάλμα που, βολικά, απαριθμεί όλες τις προκαθορισμένες phases:
+  ```
+  [ERROR] No goals have been specified for this build. You must specify a valid lifecycle phase or a goal ...
+  Available lifecycle phases are: pre-clean, clean, post-clean, validate, initialize, ..., deploy, pre-site, site, post-site, site-deploy.
+  ```
+
 > **Προσοχή στα ονόματα:** τα lifecycles `clean` και `site` έχουν μέσα τους μια **phase με το ίδιο όνομα**.
 > Υπάρχει δηλαδή το *`clean` lifecycle* (όλη η σειρά `pre-clean` → `clean` → `post-clean`) και η
 > *`clean` phase* (μόνο το μεσαίο βήμα, αυτό που διαγράφει το `target/`).
@@ -476,6 +491,61 @@ flowchart LR
 
 ## 8. Βασικές εντολές (cheat sheet)
 
+### Η γενική μορφή της εντολής `mvn`
+
+```
+mvn [options] <phase ή goal> [<phase ή goal> ...]
+```
+
+(το `mvn --help` το γράφει ως `usage: mvn [options] [<goal(s)>] [<phase(s)>]`)
+
+Μετά το `mvn` γράφουμε **ένα ή περισσότερα** από τα εξής, χωρισμένα με κενό:
+
+| Τι γράφουμε | Μορφή | Παράδειγμα | Τι εκτελείται |
+|-------------|-------|------------|---------------|
+| **phase**   | σκέτο όνομα, **χωρίς** `:` | `package` | όλες οι phases του lifecycle **μέχρι και αυτήν**, με όλα τα δεμένα goals τους |
+| **goal** (σύντομη μορφή) | `prefix:goal` | `dependency:tree` | **μόνο** αυτό το goal |
+| **goal** (πλήρης μορφή) | `groupId:artifactId[:version]:goal` | `org.apache.maven.plugins:maven-help-plugin:3.5.1:evaluate` | **μόνο** αυτό το goal, από τη συγκεκριμένη έκδοση του plugin |
+
+- Το **`:`** είναι αυτό που ξεχωρίζει τα δύο: `package` είναι phase, `war:war` είναι goal.
+- Το **prefix** είναι το σύντομο όνομα του plugin: `maven-dependency-plugin` → `dependency`, `maven-war-plugin` → `war`.
+  Για τα επίσημα plugins του Maven δουλεύει πάντα. Για άλλα plugins (π.χ. Jetty → `jetty`) δουλεύει μόνο αν το plugin είναι
+  δηλωμένο στο `pom.xml`. Γι' αυτό το `mvn jetty:run` δουλεύει μόνο μέσα στο project μας.
+- Μπορούμε να **ανακατέψουμε** phases και goals. Εκτελούνται **με τη σειρά που τα γράψαμε**. Π.χ. το `mvn clean package dependency:tree`:
+  ```
+  [INFO] --- clean:3.2.0:clean ...                 ← phase clean
+  [INFO] --- resources:3.3.1:resources ...         ┐
+  [INFO] --- compiler:3.13.0:compile ...           │
+  [INFO] --- resources:3.3.1:testResources ...     │ phase package
+  [INFO] --- compiler:3.13.0:testCompile ...       │ (και όλες οι προηγούμενες)
+  [INFO] --- surefire:3.5.2:test ...               │
+  [INFO] --- war:3.4.0:war ...                     ┘
+  [INFO] --- dependency:3.7.0:tree (default-cli)   ← goal (το "default-cli" = κλήθηκε από τη γραμμή εντολών)
+  ```
+
+**Options (flags):** ξεκινούν με `-` και αλλάζουν το *πώς* τρέχει το Maven. Οι πιο χρήσιμες:
+
+| Option | Σημασία | Παράδειγμα |
+|--------|---------|------------|
+| `-D<όνομα>=<τιμή>` | ορίζει μια **ιδιότητα** (property). Έτσι δίνουμε ρυθμίσεις στα plugins | `mvn package -DskipTests` |
+| `-q` | quiet: μόνο σφάλματα | `mvn -q package` |
+| `-X` | debug: πάρα πολλά μηνύματα (troubleshooting) | `mvn -X package` |
+| `-e` | δείχνει το πλήρες stack trace όταν κάτι αποτύχει | `mvn -e package` |
+| `-o` | offline: χωρίς internet, μόνο από το `~/.m2` | `mvn -o package` |
+| `-U` | ξαναελέγχει για νέες SNAPSHOT dependencies | `mvn -U package` |
+| `-f <αρχείο>` | χρήση συγκεκριμένου `pom.xml` (π.χ. από άλλο φάκελο) | `mvn -f webapp1/pom.xml package` |
+| `-B` | batch mode: μη διαδραστικό, χωρίς χρώματα (για scripts/CI) | `mvn -B package` |
+| `-v` | έκδοση Maven και Java | `mvn -v` |
+
+Ένα πλήρες παράδειγμα με όλα τα κομμάτια:
+
+```
+mvn  -q  -DskipTests  clean  package  dependency:tree
+     └───options───┘  └─phases─────┘  └────goal─────┘
+```
+
+### Συνηθισμένες εντολές
+
 | Εντολή                               | Τι κάνει                                                            |
 |--------------------------------------|---------------------------------------------------------------------|
 | `mvn -v`                             | έκδοση Maven και Java                                               |
@@ -491,25 +561,15 @@ flowchart LR
 | `mvn help:effective-pom`             | το «πλήρες» POM με όλα τα defaults που εφαρμόζονται                  |
 | `mvn versions:display-dependency-updates` | ποιες dependencies έχουν νεότερη έκδοση                         |
 
-Χρήσιμα flags:
-
-| Flag           | Σημασία                                                     |
-|----------------|-------------------------------------------------------------|
-| `-D<όνομα>=<τιμή>` | ορίζει μια ιδιότητα (property), π.χ. `-DskipTests`       |
-| `-q`           | quiet: λιγότερα μηνύματα                                     |
-| `-X`           | debug: πολλά μηνύματα (για troubleshooting)                  |
-| `-o`           | offline: χωρίς πρόσβαση στο internet (μόνο από `~/.m2`)       |
-| `-U`           | force update: ξαναελέγχει για νέα SNAPSHOT dependencies        |
-
 ## 9. Archetypes
 
 Ένα **archetype** είναι ένα *πρότυπο (template) project*. Με το goal `archetype:generate` το Maven
 δημιουργεί έτοιμη τη δομή φακέλων και το `pom.xml`. Μερικά γνωστά archetypes:
 
-| archetypeArtifactId           | Τι δημιουργεί                         |
-|-------------------------------|---------------------------------------|
-| `maven-archetype-quickstart`  | απλή Java εφαρμογή (`jar`)            |
-| `maven-archetype-webapp`      | Java web εφαρμογή (`war`)             |
+| archetypeArtifactId           | Τελευταία έκδοση | Τι δημιουργεί                         |
+|-------------------------------|------------------|---------------------------------------|
+| `maven-archetype-quickstart`  | 1.5              | απλή Java εφαρμογή (`jar`)            |
+| `maven-archetype-webapp`      | 1.5              | Java web εφαρμογή (`war`)             |
 
 Παράδειγμα για απλή (μη web) εφαρμογή:
 
@@ -518,10 +578,21 @@ mvn archetype:generate \
   -DgroupId=gr.uniwa.ice \
   -DartifactId=hello \
   -DarchetypeArtifactId=maven-archetype-quickstart \
+  -DarchetypeVersion=1.5 \
   -DinteractiveMode=false
 ```
 
 Αν παραλείψετε το `-DinteractiveMode=false`, το Maven θα σας ρωτήσει διαδραστικά τις τιμές.
+
+> ⚠ **Δηλώνετε πάντα την έκδοση με `-DarchetypeVersion`.** Χωρίς αυτήν, το Maven παίρνει την έκδοση από τον
+> εσωτερικό του κατάλογο. Για το `maven-archetype-webapp` αυτή είναι η **1.0**, ένα πολύ παλιό πρότυπο με JUnit 3.8 και
+> `web.xml` του 2001. Τις διαθέσιμες εκδόσεις ενός archetype τις βλέπετε στο <https://central.sonatype.com>.
+
+> **Άλλα archetypes:** Για εφαρμογές **Jakarta EE** που τρέχουν σε πλήρη *application server* (GlassFish, WildFly,
+> Payara, TomEE, Open Liberty) υπάρχει το επίσημο **Eclipse Starter for Jakarta EE**
+> (`org.eclipse.starter:jakarta-starter`, και σε web μορφή στο <https://start.jakarta.ee>). Φτιάχνει σύγχρονο project
+> (Java 21, Jakarta EE 10/11), αλλά το παράδειγμά του είναι **REST service**, που **δεν** τρέχει σε σκέτο Tomcat/Jetty.
+> Για Servlets/JSP σε Tomcat, που κάνουμε εδώ, χρησιμοποιούμε το `maven-archetype-webapp`.
 
 ---
 
@@ -542,6 +613,7 @@ mvn archetype:generate \
   -DgroupId=gr.uniwa.ice \
   -DartifactId=webapp1 \
   -DarchetypeArtifactId=maven-archetype-webapp \
+  -DarchetypeVersion=1.5 \
   -DinteractiveMode=false
 ```
 
@@ -549,7 +621,7 @@ mvn archetype:generate \
 (και με εισαγωγικά γύρω από κάθε `-D…`):
 
 ```powershell
-mvn archetype:generate "-DgroupId=gr.uniwa.ice" "-DartifactId=webapp1" "-DarchetypeArtifactId=maven-archetype-webapp" "-DinteractiveMode=false"
+mvn archetype:generate "-DgroupId=gr.uniwa.ice" "-DartifactId=webapp1" "-DarchetypeArtifactId=maven-archetype-webapp" "-DarchetypeVersion=1.5" "-DinteractiveMode=false"
 ```
 
 Τι σημαίνει κάθε παράμετρος:
@@ -560,6 +632,7 @@ mvn archetype:generate "-DgroupId=gr.uniwa.ice" "-DartifactId=webapp1" "-Darchet
 | `-DgroupId=gr.uniwa.ice`                     | το groupId του νέου project                               |
 | `-DartifactId=webapp1`                       | το όνομα του project — και του φακέλου που θα δημιουργηθεί |
 | `-DarchetypeArtifactId=maven-archetype-webapp` | ποιο πρότυπο να χρησιμοποιηθεί                           |
+| `-DarchetypeVersion=1.5`                     | ποια **έκδοση** του προτύπου. **Μην την παραλείψετε**: χωρίς αυτήν το Maven παίρνει την πολύ παλιά 1.0 (βλ. ενότητα 9) |
 | `-DinteractiveMode=false`                    | να μη ρωτήσει τίποτα, να χρησιμοποιήσει defaults          |
 
 Η πρώτη εκτέλεση αργεί λίγο γιατί κατεβαίνουν plugins στο `~/.m2`. Στο τέλος πρέπει να δείτε `BUILD SUCCESS`.
@@ -572,6 +645,9 @@ cd webapp1
 
 ```
 webapp1/
+├── .mvn/
+│   ├── jvm.config
+│   └── maven.config
 ├── pom.xml
 └── src/
     └── main/
@@ -584,9 +660,22 @@ webapp1/
 Παρατηρήσεις:
 
 - Το `packaging` στο `pom.xml` είναι `war`.
-- **Δεν** υπάρχει φάκελος `src/main/java` — θα τον φτιάξουμε εμείς.
-- Το archetype είναι αρκετά **παλιό**: το `pom.xml` έχει JUnit 3.8.1 και το `web.xml` είναι
-  Servlet 2.3 (από το 2001!). Στα επόμενα βήματα τα εκσυγχρονίζουμε.
+- **Δεν** υπάρχει φάκελος `src/main/java`. Θα τον φτιάξουμε εμείς.
+- Ο φάκελος `.mvn/` έχει δύο **κενά** αρχεία. Εκεί μπορεί κανείς να γράψει ρυθμίσεις που ισχύουν για το συγκεκριμένο project:
+  options του Maven στο `maven.config` (π.χ. `-B`) και options της JVM που τρέχει το Maven στο `jvm.config` (π.χ. `-Xmx1g`).
+  Τα αφήνουμε όπως είναι.
+- Το `pom.xml` έχει ήδη **κλειδωμένες εκδόσεις** για όλα τα plugins (στο `<pluginManagement>`). Αυτό είναι καλή πρακτική.
+- Το πρότυπο όμως είναι φτιαγμένο για **παλιότερη Java**. Αυτά πρέπει να αλλάξουν:
+
+  | Τι έφτιαξε το archetype                                    | Τι θέλουμε                                    |
+  |------------------------------------------------------------|-----------------------------------------------|
+  | Java **8** (`maven.compiler.source/target`)                | Java **21** (`maven.compiler.release`)        |
+  | **JUnit 4**                                                | **JUnit 5** (Jupiter)                         |
+  | **κανένα** Servlet API                                     | `jakarta.servlet-api` 6.0 (`provided`)        |
+  | `web.xml` **4.0**, namespace **Java EE** (`xmlns.jcp.org`, εποχή `javax.*`) | `web.xml` **6.0**, namespace **Jakarta EE** |
+  | χωρίς server για εκτέλεση                                  | Jetty plugin για `mvn jetty:run`              |
+
+  Στα επόμενα δύο βήματα τα εκσυγχρονίζουμε.
 
 ## Βήμα 3: Εκσυγχρονισμός του `pom.xml`
 
@@ -685,8 +774,11 @@ webapp1/
 </web-app>
 ```
 
-> Γιατί; Με το παλιό `web.xml` (2.3) ο server απενεργοποιεί σύγχρονες δυνατότητες,
-> όπως τα annotations `@WebServlet` και το Expression Language (`${...}`) στα JSP.
+> **Γιατί;** Το `web.xml` του archetype είναι έκδοση 4.0 (Java EE 8, εποχή `javax.*`). Ο κώδικάς μας και οι servers
+> που χρησιμοποιούμε (Tomcat 10.1+/11, Jetty 12) είναι **Jakarta EE** (`jakarta.*`), οπότε δηλώνουμε την αντίστοιχη έκδοση,
+> 6.0, με το νέο namespace `https://jakarta.ee/xml/ns/jakartaee`. Ακόμα παλιότερα αρχεία `web.xml` (π.χ. το 2.3 της
+> έκδοσης 1.0 του archetype) είναι χειρότερα: ο server **απενεργοποιεί** σύγχρονες δυνατότητες, όπως τα annotations
+> `@WebServlet` και το Expression Language (`${...}`) στα JSP.
 
 ## Βήμα 5: Το πρώτο Servlet
 
@@ -1138,7 +1230,7 @@ tail -f $CATALINA_HOME/logs/catalina.out
 | `mvn: command not found` | Το Maven δεν είναι στο `PATH`. |
 | `release version 21 not supported` | Το Maven τρέχει με παλιότερο JDK. Δείτε το `mvn -v` και ρυθμίστε το `JAVA_HOME`, ή μειώστε το `maven.compiler.release`. |
 | `package jakarta.servlet does not exist` | Λείπει η dependency `jakarta.servlet-api` από το `pom.xml`. |
-| 404 στο `/hello` | Ελέγξτε το URL (περιλαμβάνει το context path `/webapp1`), το `@WebServlet` και ότι το `web.xml` είναι έκδοση 6.0 (όχι το παλιό 2.3). |
+| 404 στο `/hello` | Ελέγξτε το URL (περιλαμβάνει το context path `/webapp1`), το `@WebServlet` και ότι το `web.xml` είναι έκδοση 6.0 (Βήμα 4) και όχι κάποια παλιότερη. |
 | Η εφαρμογή γίνεται deploy σε Tomcat 9 αλλά τα servlets δεν φορτώνουν (404) | Ο Tomcat 9 χρησιμοποιεί `javax.*`. Χρησιμοποιήστε Tomcat 10.1+. |
 | Ελληνικά εμφανίζονται ως `???` | Βάλτε `charset=UTF-8` στο `setContentType` και `<%@ page contentType="text/html; charset=UTF-8" %>` στα JSP. |
 | `Address already in use` / port 8080 | Τρέχει ήδη κάποιος server (π.χ. Tomcat ή άλλο `jetty:run`). Σταματήστε τον ή αλλάξτε θύρα. |
