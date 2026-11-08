@@ -756,6 +756,43 @@ webapp1/
 
 > Αν έχετε JDK 17, αλλάξτε το `maven.compiler.release` σε `17`.
 
+### Τι σημαίνει το `<scope>`
+
+Κάθε `<dependency>` μπορεί να έχει ένα **`<scope>`**. Το scope λέει στο Maven **σε ποιες φάσεις χρειάζεται η βιβλιοθήκη**
+και, κυρίως για εμάς, **αν θα μπει μέσα στο `.war`**. Μια βιβλιοθήκη μπορεί να χρειάζεται σε τρία διαφορετικά σημεία:
+
+1. για το **compile** του κώδικά μας (`src/main/java`),
+2. για τα **tests** (`src/test/java`),
+3. όταν **τρέχει** η εφαρμογή στον server. Για να είναι διαθέσιμη τότε, πρέπει να υπάρχει στο `WEB-INF/lib/` του `.war`,
+   **εκτός** αν την έχει ήδη ο server.
+
+Στο `pom.xml` μας υπάρχουν δύο scopes:
+
+| Dependency | Scope | Compile `src/main` | Tests | Μέσα στο `.war`; | Γιατί |
+|------------|-------|:------------------:|:-----:|:----------------:|-------|
+| `jakarta.servlet-api` | **`provided`** | ✔ | ✔ | ✘ | Χωρίς αυτήν δεν γίνεται compile το `HelloServlet` (`import jakarta.servlet...`). Όταν όμως τρέχει η εφαρμογή, το Servlet API το **παρέχει** (*provides*) ο server: ο Tomcat έχει δικό του αντίγραφο στο `$CATALINA_HOME/lib/servlet-api.jar`. Αν βάζαμε και δεύτερο αντίγραφο στο `.war`, θα συγκρουόταν με αυτό του server |
+| `junit-jupiter` | **`test`** | ✘ | ✔ | ✘ | Το JUnit χρειάζεται **μόνο** για τα tests. Δεν έχει καμία δουλειά στον server |
+
+Και αν **δεν** γράψουμε `<scope>`; Τότε ισχύει το default, **`compile`**: η βιβλιοθήκη είναι διαθέσιμη παντού **και** μπαίνει
+στο `WEB-INF/lib/` του `.war`. Αυτό θέλουμε για κανονικές βιβλιοθήκες που ο server δεν έχει, π.χ. τη JSTL του
+[Forms.md](Forms.md) ή μια βιβλιοθήκη για JSON (Gson). Όλα τα scopes συγκεντρωμένα είναι στον πίνακα της
+[ενότητας 6](#6-dependencies-και-scopes).
+
+Το scope φαίνεται και στην πράξη:
+
+- Το `mvn dependency:list` δείχνει το scope στο τέλος κάθε γραμμής. Παρατηρήστε ότι και οι βιβλιοθήκες που φέρνει
+  μαζί του το JUnit (transitive) «κληρονομούν» το scope `test`:
+  ```
+  jakarta.servlet:jakarta.servlet-api:jar:6.0.0:provided
+  org.junit.jupiter:junit-jupiter:jar:5.11.4:test
+  org.junit.jupiter:junit-jupiter-api:jar:5.11.4:test
+  org.opentest4j:opentest4j:jar:1.3.0:test
+  ...
+  ```
+- Μετά το build (Βήμα 7), το `.war` **δεν** περιέχει ούτε το Servlet API ούτε το JUnit.
+- Αν κάνετε `import org.junit...` σε μια κλάση του `src/main/java`, το compile αποτυγχάνει
+  (`package org.junit.jupiter.api does not exist`): εκεί το JUnit δεν «φαίνεται», λόγω του scope `test`.
+
 ## Βήμα 4: Εκσυγχρονισμός του `web.xml`
 
 Αντικαταστήστε το `src/main/webapp/WEB-INF/web.xml` με:
