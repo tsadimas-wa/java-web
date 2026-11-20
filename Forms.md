@@ -8,7 +8,7 @@
 - πώς ελέγχουμε τα δεδομένα (**validation**) και ξαναδείχνουμε τη φόρμα με μηνύματα λάθους,
 - πού μπαίνουν τα **στατικά αρχεία** (CSS, εικόνες) και πώς τα συνδέουμε στο HTML.
 
-> **Προαπαιτούμενα:** Έχετε ολοκληρώσει το [README.md](README.md) (Μέρος Β), δηλαδή έχετε το project `webapp1`
+> **Προαπαιτούμενα:** Έχετε ολοκληρώσει το [README.md](README.md) (Βήματα 1–8), δηλαδή έχετε το project `webapp1`
 > που τρέχει με `mvn jetty:run` ή σε Tomcat 10.1+/11. Θα χρειαστείτε και όσα εξηγεί η ενότητα του README
 > [«Πριν ξεκινήσουμε: πώς λειτουργεί μια web εφαρμογή»](README.md#πριν-ξεκινήσουμε-πώς-λειτουργεί-μια-web-εφαρμογή):
 > request/response, `doGet`, `getParameter`, context path και κωδικούς HTTP (302, 404, 405, 500).
@@ -210,7 +210,7 @@ mkdir src\main\webapp\css, src\main\webapp\WEB-INF\jsp
 
 | Κομμάτι | Τι σημαίνει |
 |---------|-------------|
-| `groupId` / `artifactId` / `version` | οι «συντεταγμένες» του project (README, Μέρος Α §3) |
+| `groupId` / `artifactId` / `version` | οι «συντεταγμένες» του project ([Maven.md, §3](Maven.md#3-το-αρχείο-pomxml)) |
 | `<packaging>war</packaging>` | το αποτέλεσμα του `mvn package` είναι **web εφαρμογή** (`.war`) και όχι `.jar` |
 | `maven.compiler.release` | για ποια έκδοση Java γίνεται compile (21). Αν έχετε JDK 17, βάλτε `17` |
 | `project.build.sourceEncoding` | τα αρχεία πηγαίου κώδικα είναι σε **UTF-8**, ώστε να δουλεύουν τα ελληνικά μέσα στα `.java` |
@@ -218,7 +218,7 @@ mkdir src\main\webapp\css, src\main\webapp\WEB-INF\jsp
 | `jakarta.servlet.jsp.jstl-api` + `jakarta.servlet.jsp.jstl` | **νέο:** η JSTL (`<c:if>`, `<c:forEach>`, `<c:out>`, …). Το πρώτο είναι το **API** (interfaces) και το δεύτερο μια **υλοποίηση** (της Glassfish). Scope `compile` (το default), γιατί ο Tomcat **δεν** έχει JSTL, άρα πρέπει να μπουν στο `WEB-INF/lib/` του `.war`. Οι εκδόσεις διαφέρουν (3.0.2 και 3.0.1) γιατί είναι δύο ανεξάρτητα artifacts με δικές τους εκδόσεις. Και τα δύο υλοποιούν την ίδια προδιαγραφή, JSTL 3.0 |
 | `<exclusions>` → `jakarta.el-api` | **νέο:** το `jstl-api` φέρνει μαζί του (transitive) και το API του **Expression Language**. Αυτό όμως το έχει ήδη ο server, και ένα δεύτερο αντίγραφο στο `.war` μπορεί να προκαλέσει συγκρούσεις. Το εξαιρούμε |
 | `junit-jupiter`, scope **`test`** | JUnit 5, μόνο για τα tests. Δεν μπαίνει στο `.war` |
-| `<finalName>webapp1</finalName>` | το αρχείο θα λέγεται `target/webapp1.war`, άρα το URL θα είναι `/webapp1/` (README, Βήμα 9.5) |
+| `<finalName>webapp1</finalName>` | το αρχείο θα λέγεται `target/webapp1.war`, άρα το URL θα είναι `/webapp1/` ([Servers.md, 3.5](Servers.md#35-context-path)) |
 | `maven-compiler/surefire/war-plugin` | τα plugins που κάνουν compile, τρέχουν τα tests και φτιάχνουν το `.war`. Δηλώνουμε **συγκεκριμένες εκδόσεις** ώστε το build να είναι ίδιο σε όλους τους υπολογιστές |
 | `jetty-ee10-maven-plugin` | ενσωματωμένος server για `mvn jetty:run`. Το `<contextPath>` κάνει το URL ίδιο με του Tomcat (`/webapp1`) |
 
@@ -770,7 +770,7 @@ th, td {
 Τα requests φαίνονται στα Developer Tools (F12 → καρτέλα *Network*).
 
 **Γιατί `${pageContext.request.contextPath}`;** Το URL της εφαρμογής ξεκινά με το *context path* (`/webapp1`),
-που εξαρτάται από το όνομα του `.war` (δείτε README, Βήμα 9.5). Ας δούμε τις επιλογές:
+που εξαρτάται από το όνομα του `.war` (δείτε [Servers.md, 3.5](Servers.md#35-context-path)). Ας δούμε τις επιλογές:
 
 | `href=`                                            | Γίνεται                                    | Αποτέλεσμα |
 |----------------------------------------------------|--------------------------------------------|------------|
@@ -896,7 +896,7 @@ th, td {
 | κώδικα **Java** (Servlet, model, …) | **Ctrl+C** και ξανά `mvn jetty:run` (ή αυτόματο reload με `<scan>`, δείτε README «Jetty ή Tomcat;») |
 | `pom.xml` ή `web.xml` | **Ctrl+C** και ξανά `mvn jetty:run` |
 
-Στον **Tomcat** κάθε αλλαγή, ακόμα και σε CSS, χρειάζεται `mvn clean package` και αντιγραφή του νέου `.war` στο `webapps/` (README, Βήμα 9.6).
+Στον **Tomcat** κάθε αλλαγή, ακόμα και σε CSS, χρειάζεται `mvn clean package` και αντιγραφή του νέου `.war` στο `webapps/` ([Servers.md, 3.6](Servers.md#36-ο-κύκλος-ανάπτυξης-αλλαγή--redeploy)).
 Τα δεδομένα στη μνήμη χάνονται σε κάθε restart ή redeploy.
 
 ---
@@ -1442,7 +1442,7 @@ mvn clean package
 mvn jetty:run
 ```
 
-(ή αντιγράψτε το `target/webapp1.war` στο `webapps/` του Tomcat, όπως στο README, Βήμα 9.4).
+(ή αντιγράψτε το `target/webapp1.war` στο `webapps/` του Tomcat, όπως στο [Servers.md, 3.4](Servers.md#34-deploy-της-εφαρμογής)).
 
 Αν ακολουθήσατε τις δοκιμές **▶** των προηγούμενων ενοτήτων, τα βασικά τα έχετε ήδη ελέγξει. Εδώ είναι η πλήρης λίστα,
 μαζί με μερικές δοκιμές που δείχνουν **τι γίνεται «από κάτω»**.
