@@ -1169,7 +1169,30 @@ mvn jetty:run
 > <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
 > ```
 
-> Αν η θύρα 8080 είναι πιασμένη: `mvn jetty:run -Djetty.http.port=9090`
+### Αλλαγή θύρας (port)
+
+Αν δεν ορίσετε κάτι, ο Jetty ακούει στη θύρα **8080**. Αν η θύρα είναι πιασμένη ή θέλετε άλλη, έχετε δύο τρόπους:
+
+**α) Μόνο για μία εκτέλεση**, από τη γραμμή εντολών (δεν αλλάζει το `pom.xml`):
+
+```bash
+mvn jetty:run -Djetty.http.port=9090
+```
+
+**β) Μόνιμα**, στο `pom.xml`, προσθέτοντας `<httpConnector>` στο `<configuration>` του Jetty plugin:
+
+```xml
+<configuration>
+  <webApp>
+    <contextPath>/webapp1</contextPath>
+  </webApp>
+  <httpConnector>
+    <port>9090</port>
+  </httpConnector>
+</configuration>
+```
+
+Και στις δύο περιπτώσεις η εφαρμογή ανοίγει στο <http://localhost:9090/webapp1/>.
 
 ## Jetty ή Tomcat;
 
