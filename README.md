@@ -9,6 +9,8 @@
 3. **[Servers.md](Servers.md)**: εκτέλεση της εφαρμογής σε Jetty και σε Apache Tomcat.
 4. **[Forms.md](Forms.md)**: φόρμες με Servlets και JSP.
 
+Για το εργαστήριο: **[lab-form.md](lab-form.md)**, μια απλή φόρμα φοιτητών στο NetBeans, βήμα‑βήμα με κώδικα για copy‑paste.
+
 ## Περιεχόμενα
 
 - [Γρήγορη εκκίνηση με GitHub Codespaces](#γρήγορη-εκκίνηση-με-github-codespaces)
