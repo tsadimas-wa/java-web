@@ -27,6 +27,7 @@
 - [10. Η αρχική σελίδα](#10-η-αρχική-σελίδα)
 - [11. Εκτέλεση και δοκιμή](#11-εκτέλεση-και-δοκιμή)
 - [12. Πώς δουλεύουν όλα μαζί](#12-πώς-δουλεύουν-όλα-μαζί)
+- [13. Επέκταση: validation στην κλάση Student](#13-επέκταση-validation-στην-κλάση-student)
 - [Συχνά προβλήματα](#συχνά-προβλήματα)
 - [Ασκήσεις](#ασκήσεις)
 
@@ -656,6 +657,170 @@ GET  /studentlab/students     ─▶ StudentListController.doGet
 
 ---
 
+## 13. Επέκταση: validation στην κλάση Student
+
+Μέχρι τώρα ο έλεγχος στον controller ήταν ένας: «όλα τα πεδία υποχρεωτικά», με ένα γενικό μήνυμα. Εδώ τον κάνουμε
+λίγο πιο πραγματικό:
+
+- οι **κανόνες** μπαίνουν στην ίδια την `Student` (μέθοδος `validate()`). Έτσι βρίσκονται μαζί με τα δεδομένα
+  που ελέγχουν, και όποιος controller φτιάχνει `Student` μπορεί να τους ξαναχρησιμοποιήσει,
+- κάθε πεδίο έχει **δικό του μήνυμα λάθους**, που εμφανίζεται δίπλα του στη φόρμα.
+
+Αλλάζουν τρία αρχεία: η `Student`, η `doPost` του `StudentFormController` και η `student-form.jsp`.
+
+### 13.1 Η μέθοδος validate() στη Student
+
+Προσθέστε στην `Student` τα δύο imports και τις δύο μεθόδους (τα υπόλοιπα μένουν ίδια):
+
+**Αρχείο:** `src/main/java/gr/uniwa/ice/studentlab/model/Student.java`
+
+```java
+package gr.uniwa.ice.studentlab.model;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+public class Student {
+
+    // ... πεδία, constructor και getters όπως πριν ...
+
+    // Επιστρέφει τα λάθη: κλειδί = όνομα πεδίου, τιμή = μήνυμα.
+    // Άδειο Map σημαίνει ότι ο φοιτητής είναι έγκυρος.
+    public Map<String, String> validate() {
+        Map<String, String> errors = new LinkedHashMap<>();
+
+        if (isBlank(name)) {
+            errors.put("name", "Το όνομα είναι υποχρεωτικό.");
+        } else if (name.length() < 2) {
+            errors.put("name", "Το όνομα πρέπει να έχει τουλάχιστον 2 χαρακτήρες.");
+        }
+
+        if (isBlank(surname)) {
+            errors.put("surname", "Το επώνυμο είναι υποχρεωτικό.");
+        }
+
+        if (isBlank(email)) {
+            errors.put("email", "Το email είναι υποχρεωτικό.");
+        } else if (!email.matches("[^@\\s]+@[^@\\s]+\\.[^@\\s]+")) {
+            errors.put("email", "Μη έγκυρο email.");
+        }
+
+        return errors;
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+}
+```
+
+- Το **`Map<String, String>`** κρατά ένα μήνυμα για κάθε πεδίο που έχει λάθος. Το **`LinkedHashMap`** κρατά τη σειρά
+  με την οποία προστέθηκαν.
+- Το **`matches(...)`** ελέγχει το email με ένα απλό regular expression: «κάτι, `@`, κάτι, `.`, κάτι», χωρίς κενά.
+  Είναι ενδεικτικός έλεγχος, όχι πλήρης.
+
+### 13.2 Ο controller χρησιμοποιεί τη validate()
+
+Αντικαταστήστε τη `doPost` και την `isBlank` του `StudentFormController` με τα παρακάτω, και προσθέστε το
+`import java.util.Map;`:
+
+**Αρχείο:** `src/main/java/gr/uniwa/ice/studentlab/controller/StudentFormController.java`
+
+```java
+    // POST /students/new → ο χρήστης πάτησε «Αποθήκευση»
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        // 1. Διαβάζουμε τα πεδία και φτιάχνουμε το αντικείμενο
+        Student student = new Student(
+                trim(request.getParameter("name")),
+                trim(request.getParameter("surname")),
+                trim(request.getParameter("email")));
+
+        // 2. Ο έλεγχος γίνεται από την ίδια τη Student
+        Map<String, String> errors = student.validate();
+        if (!errors.isEmpty()) {
+            request.setAttribute("errors", errors);
+            request.getRequestDispatcher("/WEB-INF/views/student-form.jsp").forward(request, response);
+            return;
+        }
+
+        // 3. Αποθήκευση και redirect στη λίστα
+        StudentRepository.save(student);
+        response.sendRedirect(request.getContextPath() + "/students");
+    }
+
+    // null → "" και κόψιμο κενών στην αρχή/τέλος
+    private String trim(String value) {
+        return value == null ? "" : value.trim();
+    }
+```
+
+Ο controller δεν ξέρει πια **ποιοι** είναι οι κανόνες. Ρωτά τη `Student` αν είναι έγκυρη και, αν δεν είναι,
+δίνει τα λάθη στη JSP ως attribute `errors`.
+
+### 13.3 Η φόρμα δείχνει το λάθος κάθε πεδίου
+
+Στη `student-form.jsp` αντικαταστήστε το `<c:if test="${not empty error}">…</c:if>` και τη `<form>` με:
+
+**Αρχείο:** `src/main/webapp/WEB-INF/views/student-form.jsp`
+
+```jsp
+    <c:if test="${not empty errors}">
+        <p><strong>Διορθώστε τα λάθη της φόρμας.</strong></p>
+    </c:if>
+
+    <form method="post" action="${pageContext.request.contextPath}/students/new">
+        <p>
+            <label for="name">Όνομα:</label>
+            <input type="text" id="name" name="name" value="<c:out value='${param.name}'/>">
+            <strong><c:out value="${errors.name}"/></strong>
+        </p>
+        <p>
+            <label for="surname">Επώνυμο:</label>
+            <input type="text" id="surname" name="surname" value="<c:out value='${param.surname}'/>">
+            <strong><c:out value="${errors.surname}"/></strong>
+        </p>
+        <p>
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" value="<c:out value='${param.email}'/>">
+            <strong><c:out value="${errors.email}"/></strong>
+        </p>
+        <p>
+            <button type="submit">Αποθήκευση</button>
+        </p>
+    </form>
+```
+
+- **`${errors.name}`**: όταν το `errors` είναι `Map`, η EL καλεί την `errors.get("name")`. Αν το πεδίο δεν έχει λάθος,
+  η τιμή είναι κενή και το `<c:out>` δεν γράφει τίποτα.
+- Την πρώτη φορά που ανοίγει η φόρμα (GET) δεν υπάρχει καθόλου `errors`, οπότε δεν εμφανίζεται κανένα μήνυμα.
+
+### 13.4 Δοκιμή και έλεγχος στον browser
+
+Πατήστε **Run** και δοκιμάστε:
+
+1. Όνομα `Α` (ένας χαρακτήρας): εμφανίζεται «Το όνομα πρέπει να έχει τουλάχιστον 2 χαρακτήρες.» δίπλα στο πεδίο.
+2. Όλα τα πεδία κενά: εμφανίζεται ένα μήνυμα δίπλα σε κάθε πεδίο.
+3. Email `abc`: ο **browser** σταματά την υποβολή με δικό του μήνυμα, πριν φτάσει το request στον Tomcat.
+   Αυτό γίνεται επειδή το πεδίο είναι `type="email"`.
+
+Για να δείτε και τον έλεγχο του **server** στο email, προσθέστε προσωρινά το **`novalidate`** στη φόρμα
+(`<form method="post" novalidate action="...">`). Ο browser δεν ελέγχει πια τίποτα, και το μήνυμα «Μη έγκυρο email.»
+έρχεται από τη `validate()`.
+
+> **Γιατί δύο έλεγχοι;** Ο έλεγχος στον browser (`type="email"`, `required`, …) είναι μόνο **ευκολία** για τον
+> χρήστη: παρακάμπτεται εύκολα (με `novalidate`, με τα DevTools ή με `curl`). Ο έλεγχος στον **server** είναι
+> υποχρεωτικός, γιατί μόνο σε αυτόν μπορούμε να βασιστούμε.
+
+> **Στην πράξη:** σε μεγαλύτερες εφαρμογές οι κανόνες γράφονται συνήθως με annotations πάνω στα πεδία
+> (`@NotBlank`, `@Size(min = 2)`, `@Email`), με το **Jakarta Bean Validation** (υλοποίηση: Hibernate Validator).
+> Ο Tomcat δεν το περιέχει, οπότε χρειάζεται επιπλέον dependency. Η ιδέα πάντως είναι η ίδια με τη `validate()`
+> που γράψαμε εδώ: οι κανόνες ζουν στην κλάση και ο controller απλώς ρωτά αν το αντικείμενο είναι έγκυρο.
+
+---
+
 ## Συχνά προβλήματα
 
 | Πρόβλημα | Αιτία / Λύση |
@@ -676,9 +841,12 @@ GET  /studentlab/students     ─▶ StudentListController.doGet
 
 1. Προσθέστε στη `Student` ένα τέταρτο πεδίο, **`am`** (αριθμός μητρώου). Χρειάζεται αλλαγή στην κλάση, στον controller,
    στη φόρμα και στον πίνακα.
-2. Ελέγξτε στον `StudentFormController` ότι το email περιέχει `@`. Αν όχι, εμφανίστε το μήνυμα «Μη έγκυρο email.».
+2. (Μετά το βήμα 13 και την άσκηση 1) Προσθέστε στη `validate()` κανόνα για το `am`: υποχρεωτικό και μόνο ψηφία.
+   Υπόδειξη: `am.matches("\\d+")`.
 3. Εμφανίστε πάνω από τον πίνακα της λίστας το πλήθος των φοιτητών (Υπόδειξη: `${students.size()}`).
 4. Μην επιτρέπετε δύο φοιτητές με το ίδιο email. Προσθέστε στο `StudentRepository` μια μέθοδο
-   `existsByEmail(String email)` και χρησιμοποιήστε τη στον controller.
+   `existsByEmail(String email)` και χρησιμοποιήστε τη στον controller. Αν έχετε κάνει το βήμα 13, βάλτε το λάθος στο
+   ίδιο `errors` Map, με κλειδί `"email"`. Ο κανόνας αυτός μπαίνει στον controller και όχι στη `validate()`, γιατί
+   χρειάζεται το repository: μια μεμονωμένη `Student` δεν ξέρει ποιοι άλλοι φοιτητές υπάρχουν.
 5. Φτιάξτε έναν τρίτο controller, `/students/search?surname=...`, που εμφανίζει μόνο τους φοιτητές με το επώνυμο που δόθηκε.
    Ξαναχρησιμοποιήστε τη `student-list.jsp`.
