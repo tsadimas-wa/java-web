@@ -28,6 +28,7 @@
 - [11. Εκτέλεση και δοκιμή](#11-εκτέλεση-και-δοκιμή)
 - [12. Πώς δουλεύουν όλα μαζί](#12-πώς-δουλεύουν-όλα-μαζί)
 - [13. Επέκταση: validation στην κλάση Student](#13-επέκταση-validation-στην-κλάση-student)
+- [14. Επέκταση: σχέση 1 προς πολλά (Student → Grade)](#14-επέκταση-σχέση-1-προς-πολλά-student--grade)
 - [Συχνά προβλήματα](#συχνά-προβλήματα)
 - [Ασκήσεις](#ασκήσεις)
 
@@ -612,27 +613,10 @@ public class StudentListController extends HttpServlet {
 
 Τι γίνεται όταν ο χρήστης καταχωρεί έναν φοιτητή:
 
-```
-Browser                         Tomcat
-───────                         ──────
-GET  /studentlab/students/new ─▶ StudentFormController.doGet
-                                   └─ forward ─▶ student-form.jsp ─▶ HTML φόρμα
-                              ◀─ 200 OK (η φόρμα)
+![Ροή καταχώρησης φοιτητή: GET φόρμας, POST, redirect, GET λίστας](images/lab-form-flow.png)
 
-(ο χρήστης συμπληρώνει και πατά «Αποθήκευση»)
-
-POST /studentlab/students/new ─▶ StudentFormController.doPost
-     name=…&surname=…&email=…      ├─ getParameter("name"), …
-                                   ├─ StudentRepository.save(...)
-                                   └─ sendRedirect("/studentlab/students")
-                              ◀─ 302 Found, Location: /studentlab/students
-
-GET  /studentlab/students     ─▶ StudentListController.doGet
-                                   ├─ StudentRepository.findAll()
-                                   ├─ setAttribute("students", ...)
-                                   └─ forward ─▶ student-list.jsp ─▶ HTML πίνακας
-                              ◀─ 200 OK (η λίστα)
-```
+> Η πηγή του διαγράμματος (Mermaid) είναι στο [images/lab-form-flow.mmd](images/lab-form-flow.mmd).
+> Για να ξαναφτιάξετε την εικόνα: `mmdc -i images/lab-form-flow.mmd -o images/lab-form-flow.png -s 2 -b white`.
 
 **Γιατί redirect μετά το POST;** Αν ο controller έκανε απευθείας forward στη λίστα, ο browser θα έμενε στο URL του POST. Ένα
 **Refresh (F5)** τότε θα ξανάστελνε τη φόρμα και θα αποθήκευε τον ίδιο φοιτητή δεύτερη φορά. Με το redirect, ο browser
@@ -821,6 +805,425 @@ public class Student {
 
 ---
 
+## 14. Επέκταση: σχέση 1 προς πολλά (Student → Grade)
+
+> Το βήμα αυτό προϋποθέτει το βήμα 13: η νέα κλάση έχει κι αυτή μια `validate()` και η φόρμα δείχνει τα λάθη με τον ίδιο τρόπο.
+
+Κάθε φοιτητής έχει **πολλούς βαθμούς** (π.χ. «Προγραμματισμός Διαδικτύου: 8»), ενώ κάθε βαθμός ανήκει σε **έναν**
+φοιτητή. Αυτή είναι μια σχέση **1 προς πολλά** (one‑to‑many):
+
+```
+Student (1) ───────< Grade (N)
+  id                   studentId   ← «δείχνει» στο id του φοιτητή
+  name                 course
+  surname              grade
+  email
+```
+
+Κάθε φοιτητής αποκτά δική του σελίδα, με τα στοιχεία του, τους βαθμούς του, τον μέσο όρο και μια φόρμα για νέο βαθμό:
+
+| URL                          | Μέθοδος | Controller                 | Τι κάνει                                                   |
+|------------------------------|---------|----------------------------|------------------------------------------------------------|
+| `/studentlab/students/view?id=3` | GET | `StudentDetailsController` | στοιχεία φοιτητή, οι βαθμοί του, μέσος όρος, φόρμα βαθμού |
+| `/studentlab/students/view`  | POST    | `StudentDetailsController` | αποθηκεύει τον βαθμό και κάνει redirect στη σελίδα του φοιτητή |
+
+Νέα και αλλαγμένα αρχεία:
+
+```
+src/main/
+├── java/gr/uniwa/ice/studentlab/
+│   ├── model/
+│   │   ├── Student.java                    + πεδίο id
+│   │   └── Grade.java                      ΝΕΟ
+│   ├── repository/
+│   │   ├── StudentRepository.java          + id σε κάθε φοιτητή, findById
+│   │   └── GradeRepository.java            ΝΕΟ
+│   └── controller/
+│       └── StudentDetailsController.java   ΝΕΟ   /students/view
+└── webapp/WEB-INF/views/
+    ├── student-list.jsp                    το επώνυμο γίνεται link
+    └── student-details.jsp                 ΝΕΟ
+```
+
+### 14.1 Ένα id για κάθε φοιτητή
+
+Για να «δείξει» ένας βαθμός σε έναν φοιτητή, ο φοιτητής χρειάζεται ένα μοναδικό **αναγνωριστικό** (id).
+Προσθέστε στη `Student` το πεδίο και τα δύο methods (τα υπόλοιπα μένουν ίδια):
+
+**Αρχείο:** `src/main/java/gr/uniwa/ice/studentlab/model/Student.java`
+
+```java
+    private int id;
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+```
+
+Το id **δεν** το δίνει ο χρήστης. Το δίνει το repository τη στιγμή της αποθήκευσης (όπως θα έκανε αργότερα μια βάση
+δεδομένων με ένα auto‑increment πεδίο). Αντικαταστήστε το `StudentRepository` με:
+
+**Αρχείο:** `src/main/java/gr/uniwa/ice/studentlab/repository/StudentRepository.java`
+
+```java
+package gr.uniwa.ice.studentlab.repository;
+
+import gr.uniwa.ice.studentlab.model.Student;
+import java.util.ArrayList;
+import java.util.List;
+
+public class StudentRepository {
+
+    private static final List<Student> students = new ArrayList<>();
+    private static int nextId = 1;   // το id του επόμενου φοιτητή
+
+    public static synchronized void save(Student student) {
+        student.setId(nextId++);
+        students.add(student);
+    }
+
+    public static synchronized List<Student> findAll() {
+        return new ArrayList<>(students);
+    }
+
+    // Επιστρέφει τον φοιτητή με αυτό το id, ή null αν δεν υπάρχει
+    public static synchronized Student findById(int id) {
+        for (Student student : students) {
+            if (student.getId() == id) {
+                return student;
+            }
+        }
+        return null;
+    }
+}
+```
+
+### 14.2 Η οντότητα Grade
+
+Στο package `gr.uniwa.ice.studentlab.model`, νέα κλάση `Grade`:
+
+**Αρχείο:** `src/main/java/gr/uniwa/ice/studentlab/model/Grade.java`
+
+```java
+package gr.uniwa.ice.studentlab.model;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+public class Grade {
+
+    private int studentId;     // σε ποιον φοιτητή ανήκει ο βαθμός
+    private String course;
+    private Integer grade;     // Integer και όχι int: null σημαίνει «δεν δόθηκε αριθμός»
+
+    public Grade(int studentId, String course, Integer grade) {
+        this.studentId = studentId;
+        this.course = course;
+        this.grade = grade;
+    }
+
+    public int getStudentId() {
+        return studentId;
+    }
+
+    public String getCourse() {
+        return course;
+    }
+
+    public Integer getGrade() {
+        return grade;
+    }
+
+    public Map<String, String> validate() {
+        Map<String, String> errors = new LinkedHashMap<>();
+
+        if (course == null || course.isBlank()) {
+            errors.put("course", "Το μάθημα είναι υποχρεωτικό.");
+        }
+
+        if (grade == null) {
+            errors.put("grade", "Ο βαθμός πρέπει να είναι ακέραιος αριθμός.");
+        } else if (grade < 0 || grade > 10) {
+            errors.put("grade", "Ο βαθμός πρέπει να είναι από 0 έως 10.");
+        }
+
+        return errors;
+    }
+}
+```
+
+Η `Grade` **δεν** κρατά ολόκληρο το αντικείμενο `Student`, μόνο το **`studentId`**. Αυτό είναι ακριβώς ένα
+**foreign key**: όταν αργότερα τα δεδομένα πάνε σε βάση, ο πίνακας `grade` θα έχει μια στήλη `student_id` που
+δείχνει στο `id` του πίνακα `student`.
+
+> Μια άλλη λύση θα ήταν μια `List<Grade>` μέσα στη `Student`. Δουλεύει κι αυτή, αλλά εδώ κρατάμε κάθε οντότητα
+> στο δικό της repository, όπως θα είναι και στη βάση.
+
+### 14.3 Το GradeRepository
+
+Στο package `gr.uniwa.ice.studentlab.repository`, νέα κλάση `GradeRepository`:
+
+**Αρχείο:** `src/main/java/gr/uniwa/ice/studentlab/repository/GradeRepository.java`
+
+```java
+package gr.uniwa.ice.studentlab.repository;
+
+import gr.uniwa.ice.studentlab.model.Grade;
+import java.util.ArrayList;
+import java.util.List;
+
+public class GradeRepository {
+
+    private static final List<Grade> grades = new ArrayList<>();
+
+    public static synchronized void save(Grade grade) {
+        grades.add(grade);
+    }
+
+    // Όλοι οι βαθμοί ενός φοιτητή: η πλευρά «πολλά» της σχέσης
+    public static synchronized List<Grade> findByStudentId(int studentId) {
+        List<Grade> result = new ArrayList<>();
+        for (Grade grade : grades) {
+            if (grade.getStudentId() == studentId) {
+                result.add(grade);
+            }
+        }
+        return result;
+    }
+}
+```
+
+Η `findByStudentId` κάνει ό,τι θα έκανε σε SQL ένα `SELECT * FROM grade WHERE student_id = ?`.
+
+### 14.4 Ο controller της σελίδας του φοιτητή
+
+Όπως ο `StudentFormController`, ένας controller χειρίζεται και το GET (εμφάνιση) και το POST (νέος βαθμός) στο ίδιο URL.
+Στο package `gr.uniwa.ice.studentlab.controller`, νέα κλάση `StudentDetailsController`:
+
+**Αρχείο:** `src/main/java/gr/uniwa/ice/studentlab/controller/StudentDetailsController.java`
+
+```java
+package gr.uniwa.ice.studentlab.controller;
+
+import gr.uniwa.ice.studentlab.model.Grade;
+import gr.uniwa.ice.studentlab.model.Student;
+import gr.uniwa.ice.studentlab.repository.GradeRepository;
+import gr.uniwa.ice.studentlab.repository.StudentRepository;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+
+@WebServlet("/students/view")
+public class StudentDetailsController extends HttpServlet {
+
+    // GET /students/view?id=3 → η σελίδα του φοιτητή
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        Student student = findStudent(request);
+        if (student == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Δεν βρέθηκε ο φοιτητής.");
+            return;
+        }
+        showPage(request, response, student);
+    }
+
+    // POST /students/view → νέος βαθμός για τον φοιτητή
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        Student student = findStudent(request);
+        if (student == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Δεν βρέθηκε ο φοιτητής.");
+            return;
+        }
+
+        // 1. Φτιάχνουμε τον βαθμό. Ο φοιτητής δίνεται από το id, όχι από τον χρήστη.
+        Grade grade = new Grade(
+                student.getId(),
+                trim(request.getParameter("course")),
+                parseIntOrNull(request.getParameter("grade")));
+
+        // 2. Έλεγχος, όπως στο βήμα 13
+        Map<String, String> errors = grade.validate();
+        if (!errors.isEmpty()) {
+            request.setAttribute("errors", errors);
+            showPage(request, response, student);
+            return;
+        }
+
+        // 3. Αποθήκευση και redirect πίσω στη σελίδα του ίδιου φοιτητή (Post/Redirect/Get)
+        GradeRepository.save(grade);
+        response.sendRedirect(request.getContextPath() + "/students/view?id=" + student.getId());
+    }
+
+    // Βάζει στο request ό,τι χρειάζεται η JSP και κάνει forward
+    private void showPage(HttpServletRequest request, HttpServletResponse response, Student student)
+            throws ServletException, IOException {
+
+        List<Grade> grades = GradeRepository.findByStudentId(student.getId());
+
+        request.setAttribute("student", student);
+        request.setAttribute("grades", grades);
+        request.setAttribute("average", average(grades));
+        request.getRequestDispatcher("/WEB-INF/views/student-details.jsp").forward(request, response);
+    }
+
+    // Διαβάζει το ?id=... και βρίσκει τον φοιτητή (null αν λείπει, δεν είναι αριθμός ή δεν υπάρχει)
+    private Student findStudent(HttpServletRequest request) {
+        Integer id = parseIntOrNull(request.getParameter("id"));
+        return id == null ? null : StudentRepository.findById(id);
+    }
+
+    private Double average(List<Grade> grades) {
+        if (grades.isEmpty()) {
+            return null;
+        }
+        int sum = 0;
+        for (Grade grade : grades) {
+            sum += grade.getGrade();
+        }
+        return (double) sum / grades.size();
+    }
+
+    // "8" → 8, ενώ null, "" ή "abc" → null
+    private Integer parseIntOrNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private String trim(String value) {
+        return value == null ? "" : value.trim();
+    }
+}
+```
+
+**Τι προσέχουμε:**
+
+- Τα parameters είναι **πάντα `String`**. Το `?id=3` έρχεται ως `"3"` και το μετατρέπουμε σε αριθμό με
+  **`Integer.parseInt`**. Αν ο χρήστης γράψει `?id=abc`, η `parseInt` πετά `NumberFormatException`, που την πιάνουμε.
+- Αν ο φοιτητής δεν βρεθεί, απαντάμε με **404** (`response.sendError`), όπως για μια σελίδα που δεν υπάρχει.
+- Το **`showPage`** χρησιμοποιείται και από το GET και από το POST με λάθη, ώστε η σελίδα να έχει πάντα τα ίδια δεδομένα.
+- Μετά την επιτυχημένη αποθήκευση, το redirect **κρατά το id** στο URL, για να γυρίσουμε στον ίδιο φοιτητή.
+
+### 14.5 Η JSP της σελίδας του φοιτητή
+
+Δεξί κλικ στο `WEB-INF/views` → **New → JSP…** → όνομα `student-details`:
+
+**Αρχείο:** `src/main/webapp/WEB-INF/views/student-details.jsp`
+
+```jsp
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ taglib prefix="fmt" uri="jakarta.tags.fmt" %>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Φοιτητής</title>
+</head>
+<body>
+    <h1><c:out value="${student.name}"/> <c:out value="${student.surname}"/></h1>
+    <p>Email: <c:out value="${student.email}"/></p>
+
+    <h2>Βαθμοί</h2>
+    <c:choose>
+        <c:when test="${empty grades}">
+            <p>Δεν υπάρχουν βαθμοί ακόμα.</p>
+        </c:when>
+        <c:otherwise>
+            <table border="1">
+                <tr>
+                    <th>Μάθημα</th>
+                    <th>Βαθμός</th>
+                </tr>
+                <c:forEach var="g" items="${grades}">
+                    <tr>
+                        <td><c:out value="${g.course}"/></td>
+                        <td><c:out value="${g.grade}"/></td>
+                    </tr>
+                </c:forEach>
+            </table>
+            <p>Μέσος όρος: <fmt:formatNumber value="${average}" maxFractionDigits="2"/></p>
+        </c:otherwise>
+    </c:choose>
+
+    <h2>Νέος βαθμός</h2>
+    <form method="post" action="${pageContext.request.contextPath}/students/view">
+        <input type="hidden" name="id" value="${student.id}">
+        <p>
+            <label for="course">Μάθημα:</label>
+            <input type="text" id="course" name="course" value="<c:out value='${param.course}'/>">
+            <strong><c:out value="${errors.course}"/></strong>
+        </p>
+        <p>
+            <label for="grade">Βαθμός:</label>
+            <input type="number" id="grade" name="grade" min="0" max="10" value="<c:out value='${param.grade}'/>">
+            <strong><c:out value="${errors.grade}"/></strong>
+        </p>
+        <p>
+            <button type="submit">Προσθήκη</button>
+        </p>
+    </form>
+
+    <p><a href="${pageContext.request.contextPath}/students">Λίστα φοιτητών</a></p>
+</body>
+</html>
+```
+
+- Το **`<input type="hidden" name="id">`** δεν φαίνεται στη σελίδα, αλλά στέλνεται μαζί με τη φόρμα. Έτσι η `doPost`
+  ξέρει σε ποιον φοιτητή ανήκει ο νέος βαθμός.
+- Το **`<fmt:formatNumber>`** (βιβλιοθήκη `fmt` της JSTL) δείχνει τον μέσο όρο με το πολύ δύο δεκαδικά, π.χ. `7,33`.
+  Δεν χρειάζεται νέα dependency, γιατί είναι μέρος της ίδιας JSTL του βήματος 3.
+
+### 14.6 Link από τη λίστα στη σελίδα του φοιτητή
+
+Στη `student-list.jsp`, αλλάξτε το κελί του επωνύμου ώστε να γίνει link:
+
+**Αρχείο:** `src/main/webapp/WEB-INF/views/student-list.jsp`
+
+```jsp
+                        <td>
+                            <a href="${pageContext.request.contextPath}/students/view?id=${student.id}">
+                                <c:out value="${student.surname}"/>
+                            </a>
+                        </td>
+```
+
+Το **`${student.id}`** καλεί την `getId()`, οπότε κάθε γραμμή οδηγεί σε άλλο URL: `/students/view?id=1`,
+`/students/view?id=2`, κ.ο.κ.
+
+### 14.7 Δοκιμή
+
+Πατήστε **Run** (οι φοιτητές της μνήμης χάνονται, οπότε προσθέστε ξανά δύο‑τρεις) και δοκιμάστε:
+
+1. Στη λίστα, πατήστε στο επώνυμο ενός φοιτητή. Το URL γίνεται `/studentlab/students/view?id=1`.
+2. Προσθέστε δύο‑τρεις βαθμούς. Εμφανίζονται στον πίνακα και ο μέσος όρος αλλάζει.
+3. Ανοίξτε τη σελίδα ενός **άλλου** φοιτητή: δεν έχει βαθμούς. Κάθε βαθμός ανήκει σε έναν μόνο φοιτητή.
+4. Αφήστε το μάθημα κενό: εμφανίζεται το λάθος δίπλα στο πεδίο. Για να δείτε το μήνυμα του server για τον βαθμό
+   (π.χ. `11`), προσθέστε προσωρινά `novalidate` στη φόρμα, όπως στο βήμα 13.4.
+5. Ανοίξτε με το χέρι <http://localhost:8080/studentlab/students/view?id=999> και
+   <http://localhost:8080/studentlab/students/view?id=abc>. Και στις δύο περιπτώσεις παίρνετε **404**.
+
+---
+
 ## Συχνά προβλήματα
 
 | Πρόβλημα | Αιτία / Λύση |
@@ -832,7 +1235,8 @@ public class Student {
 | Η σελίδα δείχνει κυριολεκτικά `${student.name}` | Λείπει το `web.xml` ή είναι παλιάς έκδοσης (2.x). Χρησιμοποιήστε αυτό του βήματος 5. |
 | `The absolute uri: [jakarta.tags.core] cannot be resolved` | Λείπουν οι dependencies της JSTL από το `pom.xml` (βήμα 3). |
 | Τα ελληνικά εμφανίζονται ως `???` ή `ÎÎ±...` | Λείπει η πρώτη γραμμή `<%@ page contentType=... charset=UTF-8 ... %>` στη JSP, ή το `<request-character-encoding>` στο `web.xml`. |
-| `PropertyNotFoundException: Property [name] not found on type [...Student]` | Λείπει ο getter (`getName()`) στην `Student`, ή έχει άλλο όνομα. |
+| `PropertyNotFoundException: Property [name] not found on type [...Student]` | Λείπει ο getter (`getName()`) στην `Student`, ή έχει άλλο όνομα. Το ίδιο ισχύει για το `id` στο βήμα 14 (`getId()`). |
+| (Βήμα 14) Όλα τα links της λίστας οδηγούν στο `?id=0` | Το `StudentRepository` δεν δίνει id: λείπει το `student.setId(nextId++)` στη `save`. |
 | Ο Tomcat δεν ξεκινά: `Address already in use` | Τρέχει ήδη άλλος server στη θύρα 8080. Σταματήστε τον ή αλλάξτε θύρα (δείτε [Servers.md, 3.9](Servers.md#39-αλλαγή-θύρας)). |
 
 ---
@@ -850,3 +1254,14 @@ public class Student {
    χρειάζεται το repository: μια μεμονωμένη `Student` δεν ξέρει ποιοι άλλοι φοιτητές υπάρχουν.
 5. Φτιάξτε έναν τρίτο controller, `/students/search?surname=...`, που εμφανίζει μόνο τους φοιτητές με το επώνυμο που δόθηκε.
    Ξαναχρησιμοποιήστε τη `student-list.jsp`.
+6. (Μετά το βήμα 14) Προσθέστε στη λίστα φοιτητών μια στήλη «Βαθμοί» με το πλήθος των βαθμών κάθε φοιτητή.
+   Υπόδειξη: ο controller μπορεί να φτιάξει ένα `Map<Integer, Integer>` (id φοιτητή → πλήθος) και η JSP να γράψει
+   `${gradeCounts[student.id]}`.
+7. (Μετά το βήμα 14) Μια δεύτερη σχέση 1 προς πολλά: **Department → Student**. Κάθε φοιτητής ανήκει σε ένα τμήμα.
+   - Φτιάξτε τη `Department` (`id`, `name`) και ένα `DepartmentRepository` με 3–4 τμήματα έτοιμα από την αρχή
+     (σε ένα `static { ... }` block).
+   - Προσθέστε στη `Student` ένα πεδίο `departmentId`.
+   - Στη φόρμα του φοιτητή, βάλτε ένα `<select name="departmentId">` που γεμίζει με `<c:forEach>` από τα τμήματα.
+     Προσοχή: η `doGet` του `StudentFormController` πρέπει τώρα να βάζει τη λίστα των τμημάτων ως attribute.
+   - Στη `validate()` ή στον controller, ελέγξτε ότι το τμήμα που στάλθηκε υπάρχει.
+   - Προαιρετικά, φτιάξτε μια σελίδα `/departments/view?id=...` με τους φοιτητές του τμήματος.
