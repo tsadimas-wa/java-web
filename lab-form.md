@@ -28,7 +28,8 @@
 - [11. Εκτέλεση και δοκιμή](#11-εκτέλεση-και-δοκιμή)
 - [12. Πώς δουλεύουν όλα μαζί](#12-πώς-δουλεύουν-όλα-μαζί)
 - [13. Επέκταση: validation στην κλάση Student](#13-επέκταση-validation-στην-κλάση-student)
-- [14. Επέκταση: σχέση 1 προς πολλά (Student → Grade)](#14-επέκταση-σχέση-1-προς-πολλά-student--grade)
+- [14. Επέκταση: επεξεργασία και διαγραφή φοιτητή](#14-επέκταση-επεξεργασία-και-διαγραφή-φοιτητή)
+- [15. Επέκταση: σχέση 1 προς πολλά (Student → Grade)](#15-επέκταση-σχέση-1-προς-πολλά-student--grade)
 - [Συχνά προβλήματα](#συχνά-προβλήματα)
 - [Ασκήσεις](#ασκήσεις)
 
@@ -404,6 +405,104 @@ public class StudentFormController extends HttpServlet {
   και το URL μένει `/students/new`.
 - **`doPost`**: διαβάζει τα πεδία με **`getParameter`**, τα ελέγχει, αποθηκεύει τον φοιτητή και κάνει **redirect** στη λίστα.
   Αν λείπει κάποιο πεδίο, βάζει ένα μήνυμα λάθους ως **attribute** στο request και ξαναδείχνει τη φόρμα.
+
+#### Η doPost βήμα προς βήμα
+
+Όταν ο χρήστης πατήσει «Αποθήκευση», ο browser στέλνει ένα request σαν αυτό:
+
+```http
+POST /studentlab/students/new HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+name=%CE%93%CE%B9%CF%8E%CF%81%CE%B3%CE%BF%CF%82&surname=Papadopoulos&email=g%40uniwa.gr
+```
+
+Τα δεδομένα της φόρμας είναι στο **σώμα (body)** του request, ως ζευγάρια `όνομα=τιμή` χωρισμένα με `&`. Τα ελληνικά
+και τα ειδικά σύμβολα (π.χ. το `@` → `%40`) είναι κωδικοποιημένα. Ο Tomcat βλέπει ότι το URL ταιριάζει με το
+`@WebServlet("/students/new")` και ότι η μέθοδος είναι POST, οπότε καλεί τη **`doPost`** του controller.
+
+**Βήμα 1: ανάγνωση των πεδίων**
+
+```java
+String name = request.getParameter("name");
+```
+
+- Η `getParameter("name")` ψάχνει στο body το ζευγάρι με όνομα `name` και επιστρέφει την τιμή του, ήδη
+  αποκωδικοποιημένη (π.χ. `"Γιώργος"`). Το `"name"` πρέπει να είναι **ακριβώς** ίδιο με το `name="name"` του
+  `<input>` στη JSP. Αν γράψουμε λάθος όνομα (π.χ. `"Name"`), δεν θα βγει σφάλμα: απλώς θα πάρουμε `null`.
+- Η τιμή είναι **πάντα `String`**, ακόμη κι αν ο χρήστης έγραψε αριθμό. Αν χρειαζόμαστε `int`, το μετατρέπουμε εμείς
+  (π.χ. `Integer.parseInt(...)`).
+- Τρεις περιπτώσεις για το τι επιστρέφει:
+
+  | Τι έστειλε ο browser            | Τι επιστρέφει η `getParameter` |
+  |---------------------------------|--------------------------------|
+  | `name=Γιώργος`                  | `"Γιώργος"`                    |
+  | `name=` (το πεδίο ήταν κενό)    | `""` (κενό string)             |
+  | δεν υπάρχει καθόλου `name`      | `null`                         |
+
+  Η τρίτη περίπτωση δεν συμβαίνει από τη δική μας φόρμα, αλλά μπορεί να συμβεί αν κάποιος στείλει POST με άλλο
+  εργαλείο (π.χ. `curl`). Ο server **δεν πρέπει ποτέ να εμπιστεύεται** ότι τα δεδομένα ήρθαν από τη φόρμα μας.
+
+**Βήμα 2: έλεγχος (validation)**
+
+```java
+if (isBlank(name) || isBlank(surname) || isBlank(email)) {
+    request.setAttribute("error", "Συμπληρώστε όλα τα πεδία.");
+    request.getRequestDispatcher("/WEB-INF/views/student-form.jsp").forward(request, response);
+    return;
+}
+```
+
+- Η βοηθητική `isBlank` επιστρέφει `true` αν η τιμή είναι `null` **ή** αποτελείται μόνο από κενά
+  (η `String.isBlank()` θεωρεί κενό και το `"   "`). Ο έλεγχος `value == null` γράφεται **πρώτος**: αν η τιμή είναι
+  `null`, το `||` σταματά εκεί και δεν καλείται ποτέ το `value.isBlank()`, που θα έριχνε `NullPointerException`.
+- Αν κάποιο πεδίο λείπει:
+  1. **`setAttribute("error", ...)`**: αφήνουμε ένα μήνυμα στο request. Η JSP θα το διαβάσει ως `${error}`.
+  2. **`forward`** στη JSP της φόρμας: ο χρήστης βλέπει ξανά τη φόρμα, με το μήνυμα. Εδώ κάνουμε forward και όχι
+     redirect, γιατί με redirect το attribute θα χανόταν (νέο request). Επίσης τα parameters του αρχικού POST
+     είναι ακόμη διαθέσιμα, γι' αυτό η JSP μπορεί να ξαναγεμίσει τα πεδία με `${param.name}`.
+  3. **`return`**: τερματίζει τη `doPost`. Χωρίς αυτό, η εκτέλεση θα συνέχιζε στο βήμα 3 και θα αποθήκευε έναν
+     φοιτητή με κενά πεδία, και μετά θα προσπαθούσε να κάνει και redirect σε response που έχει ήδη σταλεί
+     (`IllegalStateException`).
+- Ο έλεγχος γίνεται **στον server**, παρόλο που θα μπορούσαμε να βάλουμε `required` στα `<input>`. Ο έλεγχος στον
+  browser είναι μόνο διευκόλυνση για τον χρήστη: παρακάμπτεται εύκολα, οπότε ο έλεγχος στον server είναι
+  υποχρεωτικός.
+
+**Βήμα 3: αποθήκευση**
+
+```java
+StudentRepository.save(new Student(name.trim(), surname.trim(), email.trim()));
+```
+
+- Εδώ ξέρουμε ήδη ότι κανένα πεδίο δεν είναι `null` ή κενό, οπότε το `trim()` είναι ασφαλές. Το `trim()` κόβει τα
+  κενά στην αρχή και στο τέλος, ώστε το `"  Γιώργος "` να αποθηκευτεί ως `"Γιώργος"`.
+- Φτιάχνουμε ένα αντικείμενο `Student` και το δίνουμε στο repository. Ο controller **δεν ξέρει** πώς γίνεται η
+  αποθήκευση (λίστα στη μνήμη, βάση δεδομένων κ.λπ.). Αυτό είναι δουλειά του repository.
+
+**Βήμα 4: redirect**
+
+```java
+response.sendRedirect(request.getContextPath() + "/students");
+```
+
+- Η `getContextPath()` επιστρέφει το `/studentlab`, άρα το redirect πηγαίνει στο `/studentlab/students`. Αν γράφαμε
+  σκέτο `"/students"`, ο browser θα πήγαινε στο `http://localhost:8080/students`, εκτός της εφαρμογής μας (404).
+- Η `sendRedirect` **δεν** εμφανίζει σελίδα. Στέλνει στον browser μια σύντομη απάντηση:
+
+  ```http
+  HTTP/1.1 302 Found
+  Location: /studentlab/students
+  ```
+
+  Ο browser τη διαβάζει και κάνει μόνος του **νέο GET** στο `/studentlab/students`, που το χειρίζεται ο
+  `StudentListController`. Γιατί το κάνουμε έτσι (Post/Redirect/Get), εξηγείται στην [ενότητα 12](#12-πώς-δουλεύουν-όλα-μαζί).
+
+**Σύνοψη:** η `doPost` καταλήγει πάντα σε **ένα** από δύο αποτελέσματα:
+
+| Περίπτωση               | Τι κάνει ο controller                | Τι βλέπει ο χρήστης                          |
+|-------------------------|--------------------------------------|----------------------------------------------|
+| Λείπει κάποιο πεδίο     | `setAttribute` + `forward` + `return`| τη φόρμα ξανά, με μήνυμα και τα πεδία γεμάτα |
+| Όλα τα πεδία συμπληρωμένα | `save` + `sendRedirect`            | τη λίστα φοιτητών, με τον νέο φοιτητή        |
 
 ### 8.2 Η JSP της φόρμας
 
@@ -805,27 +904,18 @@ public class Student {
 
 ---
 
-## 14. Επέκταση: σχέση 1 προς πολλά (Student → Grade)
+## 14. Επέκταση: επεξεργασία και διαγραφή φοιτητή
 
-> Το βήμα αυτό προϋποθέτει το βήμα 13: η νέα κλάση έχει κι αυτή μια `validate()` και η φόρμα δείχνει τα λάθη με τον ίδιο τρόπο.
+> Το βήμα αυτό προϋποθέτει το βήμα 13: η φόρμα επεξεργασίας χρησιμοποιεί την ίδια `validate()` και δείχνει τα λάθη
+> με τον ίδιο τρόπο.
 
-Κάθε φοιτητής έχει **πολλούς βαθμούς** (π.χ. «Προγραμματισμός Διαδικτύου: 8»), ενώ κάθε βαθμός ανήκει σε **έναν**
-φοιτητή. Αυτή είναι μια σχέση **1 προς πολλά** (one‑to‑many):
+Κάθε γραμμή του πίνακα της λίστας αποκτά δύο επιλογές: **Επεξεργασία** και **Διαγραφή**.
 
-```
-Student (1) ───────< Grade (N)
-  id                   studentId   ← «δείχνει» στο id του φοιτητή
-  name                 course
-  surname              grade
-  email
-```
-
-Κάθε φοιτητής αποκτά δική του σελίδα, με τα στοιχεία του, τους βαθμούς του, τον μέσο όρο και μια φόρμα για νέο βαθμό:
-
-| URL                          | Μέθοδος | Controller                 | Τι κάνει                                                   |
-|------------------------------|---------|----------------------------|------------------------------------------------------------|
-| `/studentlab/students/view?id=3` | GET | `StudentDetailsController` | στοιχεία φοιτητή, οι βαθμοί του, μέσος όρος, φόρμα βαθμού |
-| `/studentlab/students/view`  | POST    | `StudentDetailsController` | αποθηκεύει τον βαθμό και κάνει redirect στη σελίδα του φοιτητή |
+| URL                              | Μέθοδος | Controller                | Τι κάνει                                                 |
+|----------------------------------|---------|---------------------------|----------------------------------------------------------|
+| `/studentlab/students/edit?id=3` | GET     | `StudentEditController`   | φόρμα γεμάτη με τα τρέχοντα στοιχεία του φοιτητή         |
+| `/studentlab/students/edit`      | POST    | `StudentEditController`   | αποθηκεύει τις αλλαγές και κάνει redirect στη λίστα      |
+| `/studentlab/students/delete`    | POST    | `StudentDeleteController` | διαγράφει τον φοιτητή και κάνει redirect στη λίστα       |
 
 Νέα και αλλαγμένα αρχεία:
 
@@ -833,22 +923,22 @@ Student (1) ───────< Grade (N)
 src/main/
 ├── java/gr/uniwa/ice/studentlab/
 │   ├── model/
-│   │   ├── Student.java                    + πεδίο id
-│   │   └── Grade.java                      ΝΕΟ
+│   │   └── Student.java                    + πεδίο id
 │   ├── repository/
-│   │   ├── StudentRepository.java          + id σε κάθε φοιτητή, findById
-│   │   └── GradeRepository.java            ΝΕΟ
+│   │   └── StudentRepository.java          + id σε κάθε φοιτητή, findById, update, deleteById
 │   └── controller/
-│       └── StudentDetailsController.java   ΝΕΟ   /students/view
+│       ├── StudentEditController.java      ΝΕΟ   /students/edit
+│       └── StudentDeleteController.java    ΝΕΟ   /students/delete
 └── webapp/WEB-INF/views/
-    ├── student-list.jsp                    το επώνυμο γίνεται link
-    └── student-details.jsp                 ΝΕΟ
+    ├── student-list.jsp                    + στήλη «Ενέργειες»
+    └── student-edit.jsp                    ΝΕΟ
 ```
 
 ### 14.1 Ένα id για κάθε φοιτητή
 
-Για να «δείξει» ένας βαθμός σε έναν φοιτητή, ο φοιτητής χρειάζεται ένα μοναδικό **αναγνωριστικό** (id).
-Προσθέστε στη `Student` το πεδίο και τα δύο methods (τα υπόλοιπα μένουν ίδια):
+Όταν ο χρήστης πατά «Διαγραφή» σε μια γραμμή, ο server πρέπει να ξέρει **ποιον** φοιτητή εννοεί. Χρειαζόμαστε λοιπόν
+ένα μοναδικό **αναγνωριστικό** (id) για κάθε φοιτητή. Προσθέστε στη `Student` το πεδίο και τις δύο μεθόδους
+(τα υπόλοιπα μένουν ίδια):
 
 **Αρχείο:** `src/main/java/gr/uniwa/ice/studentlab/model/Student.java`
 
@@ -899,10 +989,356 @@ public class StudentRepository {
         }
         return null;
     }
+
+    // Αντικαθιστά τον φοιτητή που έχει το ίδιο id. Επιστρέφει false αν δεν βρέθηκε.
+    public static synchronized boolean update(Student student) {
+        for (int i = 0; i < students.size(); i++) {
+            if (students.get(i).getId() == student.getId()) {
+                students.set(i, student);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Σβήνει τον φοιτητή με αυτό το id. Επιστρέφει false αν δεν βρέθηκε.
+    public static synchronized boolean deleteById(int id) {
+        return students.removeIf(student -> student.getId() == id);
+    }
 }
 ```
 
-### 14.2 Η οντότητα Grade
+- Η **`update`** ψάχνει τη θέση του φοιτητή με το ίδιο id και βάζει στη θέση του το νέο αντικείμενο (`set(i, ...)`).
+- Η **`deleteById`** χρησιμοποιεί τη **`removeIf`**, που σβήνει από τη λίστα όσα στοιχεία ικανοποιούν τη συνθήκη.
+  Το `student -> student.getId() == id` είναι ένα **lambda**: μια μικρή συνάρτηση που, για κάθε `student`, επιστρέφει
+  `true` αν πρέπει να σβηστεί. Η `removeIf` επιστρέφει `true` αν έσβησε κάτι.
+- Το `nextId` μόνο αυξάνεται. Αν σβηστεί ο φοιτητής με id `2`, το `2` **δεν** ξαναδίνεται σε άλλον.
+
+> **Γιατί όχι η θέση στη λίστα;** Θα μπορούσαμε να στέλνουμε τη θέση του φοιτητή (0, 1, 2, …) αντί για id. Όμως μετά
+> από μια διαγραφή οι θέσεις μετακινούνται: αυτός που ήταν στη θέση 2 πάει στη θέση 1. Αν δύο χρήστες έχουν ανοιχτή
+> τη λίστα, ο ένας μπορεί να σβήσει λάθος φοιτητή. Το id μένει ίδιο για όλη τη ζωή του φοιτητή.
+
+### 14.2 Οι επιλογές στον πίνακα της λίστας
+
+Στη `student-list.jsp`, αντικαταστήστε το `<table>…</table>` με:
+
+**Αρχείο:** `src/main/webapp/WEB-INF/views/student-list.jsp`
+
+```jsp
+            <table border="1">
+                <tr>
+                    <th>Όνομα</th>
+                    <th>Επώνυμο</th>
+                    <th>Email</th>
+                    <th>Ενέργειες</th>
+                </tr>
+                <c:forEach var="student" items="${students}">
+                    <tr>
+                        <td><c:out value="${student.name}"/></td>
+                        <td><c:out value="${student.surname}"/></td>
+                        <td><c:out value="${student.email}"/></td>
+                        <td>
+                            <a href="${pageContext.request.contextPath}/students/edit?id=${student.id}">Επεξεργασία</a>
+                            <form method="post" action="${pageContext.request.contextPath}/students/delete"
+                                  style="display: inline"
+                                  onsubmit="return confirm('Να διαγραφεί ο φοιτητής;');">
+                                <input type="hidden" name="id" value="${student.id}">
+                                <button type="submit">Διαγραφή</button>
+                            </form>
+                        </td>
+                    </tr>
+                </c:forEach>
+            </table>
+```
+
+- Η **Επεξεργασία** είναι ένα απλό link: ανοίγει μια σελίδα (GET) και δεν αλλάζει τίποτα. Κάθε γραμμή δίνει άλλο
+  `?id=...`, γιατί το `${student.id}` καλεί την `getId()` του τρέχοντος φοιτητή.
+- Η **Διαγραφή** είναι μια μικρή **φόρμα με POST**, με ένα κρυφό πεδίο `id` και ένα κουμπί. Το `style="display: inline"`
+  απλώς κρατά το κουμπί στην ίδια γραμμή με το link (μια `<form>` αλλιώς ξεκινά σε νέα γραμμή).
+- Το **`onsubmit="return confirm(...)"`** δείχνει ένα παράθυρο επιβεβαίωσης. Αν ο χρήστης πατήσει «Άκυρο», το
+  `confirm` επιστρέφει `false` και η φόρμα δεν στέλνεται. Είναι μόνο ευκολία στον browser, όπως το `required`.
+
+> **Γιατί η διαγραφή δεν είναι link (GET);** Ένα GET πρέπει μόνο να **διαβάζει**, ποτέ να αλλάζει δεδομένα.
+> Ένα link `/students/delete?id=3` θα το ακολουθούσε ο browser σε κάθε refresh ή «Πίσω», θα μπορούσε να το ανοίξει
+> ένα πρόγραμμα που προφορτώνει σελίδες ή ένα crawler, και κάποιος θα μπορούσε να το βάλει σε ένα `<img src="...">`
+> σε άλλη σελίδα. Οτιδήποτε αλλάζει δεδομένα (αποθήκευση, αλλαγή, διαγραφή) γίνεται με **POST**, και μετά
+> ακολουθεί redirect (Post/Redirect/Get).
+
+### 14.3 Ο controller της επεξεργασίας
+
+Στο package `gr.uniwa.ice.studentlab.controller`, νέα κλάση `StudentEditController`:
+
+**Αρχείο:** `src/main/java/gr/uniwa/ice/studentlab/controller/StudentEditController.java`
+
+```java
+package gr.uniwa.ice.studentlab.controller;
+
+import gr.uniwa.ice.studentlab.model.Student;
+import gr.uniwa.ice.studentlab.repository.StudentRepository;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.Map;
+
+@WebServlet("/students/edit")
+public class StudentEditController extends HttpServlet {
+
+    // GET /students/edit?id=3 → η φόρμα, γεμάτη με τα τρέχοντα στοιχεία
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        Student student = findStudent(request);
+        if (student == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Δεν βρέθηκε ο φοιτητής.");
+            return;
+        }
+        request.setAttribute("student", student);
+        request.getRequestDispatcher("/WEB-INF/views/student-edit.jsp").forward(request, response);
+    }
+
+    // POST /students/edit → ο χρήστης πάτησε «Αποθήκευση αλλαγών»
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        Student existing = findStudent(request);
+        if (existing == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Δεν βρέθηκε ο φοιτητής.");
+            return;
+        }
+
+        // 1. Νέο αντικείμενο με τις τιμές της φόρμας και το ίδιο id
+        Student student = new Student(
+                trim(request.getParameter("name")),
+                trim(request.getParameter("surname")),
+                trim(request.getParameter("email")));
+        student.setId(existing.getId());
+
+        // 2. Έλεγχος, όπως στο βήμα 13
+        Map<String, String> errors = student.validate();
+        if (!errors.isEmpty()) {
+            request.setAttribute("errors", errors);
+            request.setAttribute("student", student);   // ό,τι έγραψε ο χρήστης, για να μη χαθεί
+            request.getRequestDispatcher("/WEB-INF/views/student-edit.jsp").forward(request, response);
+            return;
+        }
+
+        // 3. Αντικατάσταση και redirect στη λίστα (Post/Redirect/Get)
+        StudentRepository.update(student);
+        response.sendRedirect(request.getContextPath() + "/students");
+    }
+
+    // Διαβάζει το id (από το ?id=... ή από το κρυφό πεδίο της φόρμας) και βρίσκει τον φοιτητή
+    private Student findStudent(HttpServletRequest request) {
+        Integer id = parseIntOrNull(request.getParameter("id"));
+        return id == null ? null : StudentRepository.findById(id);
+    }
+
+    // "3" → 3, ενώ null, "" ή "abc" → null
+    private Integer parseIntOrNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    private String trim(String value) {
+        return value == null ? "" : value.trim();
+    }
+}
+```
+
+**Τι προσέχουμε:**
+
+- Το **`id`** έρχεται πάντα ως parameter, άρα ως `String`. Στο GET έρχεται από το URL (`?id=3`) και στο POST από το
+  κρυφό πεδίο της φόρμας. Η `getParameter("id")` διαβάζει και τα δύο με τον ίδιο τρόπο. Το μετατρέπουμε σε αριθμό
+  με **`Integer.parseInt`**, και αν ο χρήστης γράψει `?id=abc`, πιάνουμε την `NumberFormatException`.
+- Αν ο φοιτητής δεν υπάρχει (π.χ. τον έσβησε κάποιος άλλος στο μεταξύ), απαντάμε με **404** (`response.sendError`).
+- Στο POST **δεν** αλλάζουμε τον φοιτητή που είναι αποθηκευμένος. Φτιάχνουμε **νέο** αντικείμενο και το περνάμε
+  στο repository μόνο αν είναι έγκυρο. Η λίστα του repository κρατά τα ίδια τα αντικείμενα, οπότε αν αλλάζαμε
+  απευθείας τον `existing` και ο έλεγχος αποτύγχανε, τα λάθος στοιχεία θα είχαν ήδη «περάσει» στη λίστα.
+- Και στις δύο περιπτώσεις που δείχνουμε τη φόρμα βάζουμε ένα attribute **`student`**: στο GET τον αποθηκευμένο φοιτητή,
+  στο POST με λάθη ό,τι έγραψε ο χρήστης. Έτσι η JSP διαβάζει πάντα από το ίδιο σημείο.
+
+### 14.4 Η JSP της επεξεργασίας
+
+Δεξί κλικ στο `WEB-INF/views` → **New → JSP…** → όνομα `student-edit`:
+
+**Αρχείο:** `src/main/webapp/WEB-INF/views/student-edit.jsp`
+
+```jsp
+<%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Επεξεργασία φοιτητή</title>
+</head>
+<body>
+    <h1>Επεξεργασία φοιτητή</h1>
+
+    <c:if test="${not empty errors}">
+        <p><strong>Διορθώστε τα λάθη της φόρμας.</strong></p>
+    </c:if>
+
+    <form method="post" action="${pageContext.request.contextPath}/students/edit">
+        <input type="hidden" name="id" value="${student.id}">
+        <p>
+            <label for="name">Όνομα:</label>
+            <input type="text" id="name" name="name" value="<c:out value='${student.name}'/>">
+            <strong><c:out value="${errors.name}"/></strong>
+        </p>
+        <p>
+            <label for="surname">Επώνυμο:</label>
+            <input type="text" id="surname" name="surname" value="<c:out value='${student.surname}'/>">
+            <strong><c:out value="${errors.surname}"/></strong>
+        </p>
+        <p>
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" value="<c:out value='${student.email}'/>">
+            <strong><c:out value="${errors.email}"/></strong>
+        </p>
+        <p>
+            <button type="submit">Αποθήκευση αλλαγών</button>
+        </p>
+    </form>
+
+    <p><a href="${pageContext.request.contextPath}/students">Άκυρο, πίσω στη λίστα</a></p>
+</body>
+</html>
+```
+
+- Μοιάζει με τη `student-form.jsp`, με δύο διαφορές:
+  1. τα πεδία παίρνουν τιμή από το **`${student.name}`** και όχι από το `${param.name}`. Την πρώτη φορά (GET) δεν
+     υπάρχουν parameters φόρμας, μόνο ο φοιτητής που έβαλε ο controller.
+  2. υπάρχει το **κρυφό πεδίο `id`**, ώστε η `doPost` να ξέρει ποιον φοιτητή αλλάζουμε.
+- Το «Άκυρο» είναι απλό link στη λίστα: δεν στέλνει τη φόρμα, οπότε δεν αλλάζει τίποτα.
+
+### 14.5 Ο controller της διαγραφής
+
+Στο package `gr.uniwa.ice.studentlab.controller`, νέα κλάση `StudentDeleteController`:
+
+**Αρχείο:** `src/main/java/gr/uniwa/ice/studentlab/controller/StudentDeleteController.java`
+
+```java
+package gr.uniwa.ice.studentlab.controller;
+
+import gr.uniwa.ice.studentlab.repository.StudentRepository;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
+@WebServlet("/students/delete")
+public class StudentDeleteController extends HttpServlet {
+
+    // POST /students/delete → διαγραφή του φοιτητή με το id της φόρμας
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        Integer id = parseIntOrNull(request.getParameter("id"));
+        if (id == null || !StudentRepository.deleteById(id)) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Δεν βρέθηκε ο φοιτητής.");
+            return;
+        }
+        response.sendRedirect(request.getContextPath() + "/students");
+    }
+
+    private Integer parseIntOrNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+}
+```
+
+- Ο controller έχει **μόνο `doPost`**. Αν κάποιος ανοίξει το `/students/delete` από τον browser (GET), η `doGet` που
+  κληρονομεί από την `HttpServlet` απαντά μόνη της με **405 Method Not Allowed**. Δεν χρειάζεται να γράψουμε κάτι.
+- Το `id == null || !StudentRepository.deleteById(id)` χρησιμοποιεί το ίδιο κόλπο με την `isBlank`: αν το `id` είναι
+  `null`, το `||` σταματά εκεί και η `deleteById` δεν καλείται.
+- Δεν υπάρχει JSP διαγραφής. Μετά τη διαγραφή, το redirect μάς γυρίζει στη λίστα, όπου ο φοιτητής δεν υπάρχει πια.
+
+### 14.6 Δοκιμή
+
+Πατήστε **Run** (οι φοιτητές της μνήμης χάνονται, οπότε προσθέστε ξανά τρεις) και δοκιμάστε:
+
+1. Κάθε γραμμή του πίνακα έχει πλέον «Επεξεργασία» και «Διαγραφή».
+2. Πατήστε **Επεξεργασία** στον δεύτερο φοιτητή. Το URL γίνεται `/studentlab/students/edit?id=2` και τα πεδία είναι
+   γεμάτα. Αλλάξτε το email και πατήστε **Αποθήκευση αλλαγών**: η λίστα δείχνει το νέο email.
+3. Ξανά **Επεξεργασία**, σβήστε το όνομα και πατήστε αποθήκευση. Εμφανίζεται το λάθος δίπλα στο πεδίο και τα άλλα πεδία
+   κρατούν ό,τι γράψατε. Πατήστε **Άκυρο**: στη λίστα ο φοιτητής είναι όπως ήταν.
+4. Πατήστε **Διαγραφή**. Στο παράθυρο επιβεβαίωσης πατήστε πρώτα «Άκυρο» (δεν γίνεται τίποτα) και μετά «OK»
+   (ο φοιτητής φεύγει από τη λίστα).
+5. Προσθέστε νέο φοιτητή και ανοίξτε την επεξεργασία του: παίρνει το **επόμενο** id (π.χ. `4`), όχι αυτό που
+   ελευθερώθηκε.
+6. Ανοίξτε με το χέρι <http://localhost:8080/studentlab/students/edit?id=999>: **404**.
+   Ανοίξτε <http://localhost:8080/studentlab/students/delete>: **405**, γιατί η διαγραφή δέχεται μόνο POST.
+
+---
+
+## 15. Επέκταση: σχέση 1 προς πολλά (Student → Grade)
+
+> Το βήμα αυτό προϋποθέτει τα βήματα 13 και 14: η νέα κλάση έχει κι αυτή μια `validate()`, η φόρμα δείχνει τα λάθη
+> με τον ίδιο τρόπο, και κάθε φοιτητής έχει ήδη το `id` του.
+
+Κάθε φοιτητής έχει **πολλούς βαθμούς** (π.χ. «Προγραμματισμός Διαδικτύου: 8»), ενώ κάθε βαθμός ανήκει σε **έναν**
+φοιτητή. Αυτή είναι μια σχέση **1 προς πολλά** (one‑to‑many):
+
+```
+Student (1) ───────< Grade (N)
+  id                   studentId   ← «δείχνει» στο id του φοιτητή
+  name                 course
+  surname              grade
+  email
+```
+
+Κάθε φοιτητής αποκτά δική του σελίδα, με τα στοιχεία του, τους βαθμούς του, τον μέσο όρο και μια φόρμα για νέο βαθμό:
+
+| URL                          | Μέθοδος | Controller                 | Τι κάνει                                                   |
+|------------------------------|---------|----------------------------|------------------------------------------------------------|
+| `/studentlab/students/view?id=3` | GET | `StudentDetailsController` | στοιχεία φοιτητή, οι βαθμοί του, μέσος όρος, φόρμα βαθμού |
+| `/studentlab/students/view`  | POST    | `StudentDetailsController` | αποθηκεύει τον βαθμό και κάνει redirect στη σελίδα του φοιτητή |
+
+Νέα και αλλαγμένα αρχεία:
+
+```
+src/main/
+├── java/gr/uniwa/ice/studentlab/
+│   ├── model/
+│   │   └── Grade.java                      ΝΕΟ
+│   ├── repository/
+│   │   └── GradeRepository.java            ΝΕΟ
+│   └── controller/
+│       └── StudentDetailsController.java   ΝΕΟ   /students/view
+└── webapp/WEB-INF/views/
+    ├── student-list.jsp                    το επώνυμο γίνεται link
+    └── student-details.jsp                 ΝΕΟ
+```
+
+### 15.1 Το id του φοιτητή
+
+Για να «δείξει» ένας βαθμός σε έναν φοιτητή, ο φοιτητής χρειάζεται ένα μοναδικό **αναγνωριστικό** (id). Το έχουμε
+ήδη από το [βήμα 14.1](#141-ένα-id-για-κάθε-φοιτητή): η `Student` έχει `getId()` και το `StudentRepository` έχει
+`findById`. Εδώ δεν αλλάζει τίποτα σε αυτά.
+
+### 15.2 Η οντότητα Grade
 
 Στο package `gr.uniwa.ice.studentlab.model`, νέα κλάση `Grade`:
 
@@ -963,7 +1399,7 @@ public class Grade {
 > Μια άλλη λύση θα ήταν μια `List<Grade>` μέσα στη `Student`. Δουλεύει κι αυτή, αλλά εδώ κρατάμε κάθε οντότητα
 > στο δικό της repository, όπως θα είναι και στη βάση.
 
-### 14.3 Το GradeRepository
+### 15.3 Το GradeRepository
 
 Στο package `gr.uniwa.ice.studentlab.repository`, νέα κλάση `GradeRepository`:
 
@@ -999,7 +1435,7 @@ public class GradeRepository {
 
 Η `findByStudentId` κάνει ό,τι θα έκανε σε SQL ένα `SELECT * FROM grade WHERE student_id = ?`.
 
-### 14.4 Ο controller της σελίδας του φοιτητή
+### 15.4 Ο controller της σελίδας του φοιτητή
 
 Όπως ο `StudentFormController`, ένας controller χειρίζεται και το GET (εμφάνιση) και το POST (νέος βαθμός) στο ίδιο URL.
 Στο package `gr.uniwa.ice.studentlab.controller`, νέα κλάση `StudentDetailsController`:
@@ -1123,7 +1559,7 @@ public class StudentDetailsController extends HttpServlet {
 - Το **`showPage`** χρησιμοποιείται και από το GET και από το POST με λάθη, ώστε η σελίδα να έχει πάντα τα ίδια δεδομένα.
 - Μετά την επιτυχημένη αποθήκευση, το redirect **κρατά το id** στο URL, για να γυρίσουμε στον ίδιο φοιτητή.
 
-### 14.5 Η JSP της σελίδας του φοιτητή
+### 15.5 Η JSP της σελίδας του φοιτητή
 
 Δεξί κλικ στο `WEB-INF/views` → **New → JSP…** → όνομα `student-details`:
 
@@ -1193,7 +1629,7 @@ public class StudentDetailsController extends HttpServlet {
 - Το **`<fmt:formatNumber>`** (βιβλιοθήκη `fmt` της JSTL) δείχνει τον μέσο όρο με το πολύ δύο δεκαδικά, π.χ. `7,33`.
   Δεν χρειάζεται νέα dependency, γιατί είναι μέρος της ίδιας JSTL του βήματος 3.
 
-### 14.6 Link από τη λίστα στη σελίδα του φοιτητή
+### 15.6 Link από τη λίστα στη σελίδα του φοιτητή
 
 Στη `student-list.jsp`, αλλάξτε το κελί του επωνύμου ώστε να γίνει link:
 
@@ -1210,7 +1646,7 @@ public class StudentDetailsController extends HttpServlet {
 Το **`${student.id}`** καλεί την `getId()`, οπότε κάθε γραμμή οδηγεί σε άλλο URL: `/students/view?id=1`,
 `/students/view?id=2`, κ.ο.κ.
 
-### 14.7 Δοκιμή
+### 15.7 Δοκιμή
 
 Πατήστε **Run** (οι φοιτητές της μνήμης χάνονται, οπότε προσθέστε ξανά δύο‑τρεις) και δοκιμάστε:
 
@@ -1254,10 +1690,10 @@ public class StudentDetailsController extends HttpServlet {
    χρειάζεται το repository: μια μεμονωμένη `Student` δεν ξέρει ποιοι άλλοι φοιτητές υπάρχουν.
 5. Φτιάξτε έναν τρίτο controller, `/students/search?surname=...`, που εμφανίζει μόνο τους φοιτητές με το επώνυμο που δόθηκε.
    Ξαναχρησιμοποιήστε τη `student-list.jsp`.
-6. (Μετά το βήμα 14) Προσθέστε στη λίστα φοιτητών μια στήλη «Βαθμοί» με το πλήθος των βαθμών κάθε φοιτητή.
+6. (Μετά το βήμα 15) Προσθέστε στη λίστα φοιτητών μια στήλη «Βαθμοί» με το πλήθος των βαθμών κάθε φοιτητή.
    Υπόδειξη: ο controller μπορεί να φτιάξει ένα `Map<Integer, Integer>` (id φοιτητή → πλήθος) και η JSP να γράψει
    `${gradeCounts[student.id]}`.
-7. (Μετά το βήμα 14) Μια δεύτερη σχέση 1 προς πολλά: **Department → Student**. Κάθε φοιτητής ανήκει σε ένα τμήμα.
+7. (Μετά το βήμα 15) Μια δεύτερη σχέση 1 προς πολλά: **Department → Student**. Κάθε φοιτητής ανήκει σε ένα τμήμα.
    - Φτιάξτε τη `Department` (`id`, `name`) και ένα `DepartmentRepository` με 3–4 τμήματα έτοιμα από την αρχή
      (σε ένα `static { ... }` block).
    - Προσθέστε στη `Student` ένα πεδίο `departmentId`.
@@ -1265,3 +1701,6 @@ public class StudentDetailsController extends HttpServlet {
      Προσοχή: η `doGet` του `StudentFormController` πρέπει τώρα να βάζει τη λίστα των τμημάτων ως attribute.
    - Στη `validate()` ή στον controller, ελέγξτε ότι το τμήμα που στάλθηκε υπάρχει.
    - Προαιρετικά, φτιάξτε μια σελίδα `/departments/view?id=...` με τους φοιτητές του τμήματος.
+8. (Μετά τα βήματα 14 και 15) Όταν διαγράφεται ένας φοιτητής, οι βαθμοί του μένουν στο `GradeRepository` χωρίς
+   φοιτητή («ορφανά» δεδομένα). Προσθέστε στο `GradeRepository` μια μέθοδο `deleteByStudentId(int studentId)` και
+   καλέστε τη από τον `StudentDeleteController`. Σε μια βάση δεδομένων το ίδιο γίνεται με `ON DELETE CASCADE`.
