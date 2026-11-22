@@ -20,16 +20,16 @@
 - [3. Το pom.xml](#3-το-pomxml)
 - [4. Καθάρισμα αρχείων που δεν χρειαζόμαστε](#4-καθάρισμα-αρχείων-που-δεν-χρειαζόμαστε)
 - [5. Το web.xml](#5-το-webxml)
-- [6. Η οντότητα Student](#6-η-οντότητα-student)
-- [7. Το StudentRepository](#7-το-studentrepository)
-- [8. Η φόρμα καταχώρησης: controller και JSP](#8-η-φόρμα-καταχώρησης-controller-και-jsp)
-- [9. Η λίστα φοιτητών: controller και JSP](#9-η-λίστα-φοιτητών-controller-και-jsp)
-- [10. Η αρχική σελίδα](#10-η-αρχική-σελίδα)
-- [11. Εκτέλεση και δοκιμή](#11-εκτέλεση-και-δοκιμή)
-- [12. Πώς δουλεύουν όλα μαζί](#12-πώς-δουλεύουν-όλα-μαζί)
-- [13. Επέκταση: validation στην κλάση Student](#13-επέκταση-validation-στην-κλάση-student)
-- [14. Επέκταση: επεξεργασία και διαγραφή φοιτητή](#14-επέκταση-επεξεργασία-και-διαγραφή-φοιτητή)
-- [15. Επέκταση: σχέση 1 προς πολλά (Student → Grade)](#15-επέκταση-σχέση-1-προς-πολλά-student--grade)
+- [7. Η οντότητα Student](#7-η-οντότητα-student)
+- [8. Το StudentRepository](#8-το-studentrepository)
+- [9. Η φόρμα καταχώρησης: controller και JSP](#9-η-φόρμα-καταχώρησης-controller-και-jsp)
+- [10. Η λίστα φοιτητών: controller και JSP](#10-η-λίστα-φοιτητών-controller-και-jsp)
+- [11. Η αρχική σελίδα](#11-η-αρχική-σελίδα)
+- [12. Εκτέλεση και δοκιμή](#12-εκτέλεση-και-δοκιμή)
+- [13. Πώς δουλεύουν όλα μαζί](#13-πώς-δουλεύουν-όλα-μαζί)
+- [14. Επέκταση: validation στην κλάση Student](#14-επέκταση-validation-στην-κλάση-student)
+- [15. Επέκταση: επεξεργασία και διαγραφή φοιτητή](#15-επέκταση-επεξεργασία-και-διαγραφή-φοιτητή)
+- [16. Επέκταση: σχέση 1 προς πολλά (Student → Grade)](#16-επέκταση-σχέση-1-προς-πολλά-student--grade)
 - [Συχνά προβλήματα](#συχνά-προβλήματα)
 - [Ασκήσεις](#ασκήσεις)
 
@@ -222,7 +222,7 @@ studentlab
 
 **Μην** σβήσετε το `Web Pages → META-INF/context.xml`, αν υπάρχει. Εκεί το NetBeans γράφει το context path (`/studentlab`).
 
-Το `index.html` το κρατάμε. Θα αλλάξουμε το περιεχόμενό του στο βήμα 10.
+Το `index.html` το κρατάμε. Θα αλλάξουμε το περιεχόμενό του στο βήμα 11.
 
 ---
 
@@ -257,7 +257,67 @@ studentlab
 
 ---
 
-## 6. Η οντότητα Student
+## 6. Packages και οργάνωση του κώδικα
+
+Πριν γράψουμε κώδικα Java, ας δούμε **πού** θα μπει ο καθένας. Δεν βάζουμε όλες τις κλάσεις σε ένα σημείο, αλλά τις
+χωρίζουμε σε **packages** ανάλογα με τη **δουλειά** που κάνουν.
+
+**Τι είναι ένα package;** Ένας φάκελος για κλάσεις Java, που ταυτόχρονα δίνει στις κλάσεις ένα «επώνυμο». Η κλάση
+`Student` στο package `gr.uniwa.ice.studentlab.model` έχει πλήρες όνομα `gr.uniwa.ice.studentlab.model.Student`, και
+δεν μπερδεύεται με μια άλλη `Student` από κάποια βιβλιοθήκη.
+
+- Το όνομα ξεκινά με ένα **domain ανάποδα** (`uniwa.gr` → `gr.uniwa`) και συνεχίζει με το τμήμα και το project
+  (`ice.studentlab`). Έτσι τα ονόματα είναι μοναδικά σε όλο τον κόσμο. Γράφεται πάντα με **μικρά γράμματα**.
+- Κάθε τελεία του ονόματος είναι ένας **υποφάκελος**. Το package πρέπει να ταιριάζει με τη θέση του αρχείου και να
+  δηλώνεται στην πρώτη γραμμή της κλάσης:
+
+  ```
+  src/main/java/gr/uniwa/ice/studentlab/model/Student.java
+                └──────────┬──────────┘ └─┬─┘
+                           │              └── package gr.uniwa.ice.studentlab.model;
+                           └── το βασικό package του project
+  ```
+
+- Για να χρησιμοποιήσει μια κλάση μια άλλη από **άλλο** package, χρειάζεται **`import`** (π.χ. ο controller γράφει
+  `import gr.uniwa.ice.studentlab.model.Student;`), και η κλάση πρέπει να είναι **`public`**.
+
+**Πώς οργανώνουμε τον κώδικα:** κάθε package έχει **έναν ρόλο**:
+
+| Package / φάκελος | Τι περιέχει | Ποιον «ξέρει» |
+|-------------------|-------------|---------------|
+| `...studentlab.model` | τις **οντότητες**: κλάσεις με δεδομένα (`Student`) | κανέναν |
+| `...studentlab.repository` | την **αποθήκευση** των οντοτήτων (`StudentRepository`) | το `model` |
+| `...studentlab.controller` | τα **Servlets**: δέχονται τα requests και αποφασίζουν τι θα γίνει | το `model` και το `repository` |
+| `src/main/webapp/WEB-INF/views` | τις **JSP**: φτιάχνουν το HTML (δεν είναι Java, άρα δεν είναι package) | διαβάζουν το `model` |
+
+Στο διάγραμμα, τα βέλη δείχνουν ποιος χρησιμοποιεί ποιον, και οι αριθμοί τη σειρά σε ένα request:
+
+![Packages του project: ο controller χρησιμοποιεί το repository και το model και κάνει forward στη JSP](images/lab-form-packages.png)
+
+Ο βασικός κανόνας: **οι εξαρτήσεις πάνε προς μία κατεύθυνση**, από τον controller προς το model. Το `model` δεν
+κάνει `import` τίποτα από τα άλλα packages, και το `repository` δεν ξέρει τίποτα για Servlets ή HTTP. Έτσι:
+
+- κάθε κλάση έχει **μία δουλειά** και ξέρουμε αμέσως πού να ψάξουμε (λάθος στην εμφάνιση → JSP, λάθος στην
+  αποθήκευση → repository),
+- μπορούμε να αλλάξουμε ένα κομμάτι χωρίς να πειράξουμε τα άλλα. Όταν η λίστα στη μνήμη γίνει βάση δεδομένων, θα
+  αλλάξει μόνο το `repository`.
+
+**Στο NetBeans:** δεξί κλικ στο **Source Packages** (ή σε ένα υπάρχον package) → **New → Java Package…** → γράφουμε
+το **πλήρες** όνομα, π.χ. `gr.uniwa.ice.studentlab.model` → **Finish**. Το NetBeans φτιάχνει μόνο του όλους τους
+υποφακέλους. Στο παράθυρο **Projects** τα packages φαίνονται ως μία γραμμή με τελείες· στο **Files** φαίνονται οι
+πραγματικοί φάκελοι. Αν μετακινήσετε μια κλάση σε άλλο package, κάντε το με **Refactor → Move**, ώστε να αλλάξουν
+αυτόματα η γραμμή `package` και τα `import`.
+
+Στις επόμενες ενότητες φτιάχνουμε τα packages με τη σειρά: πρώτα το `model`, μετά το `repository` και τέλος τον
+`controller`, δηλαδή από αυτό που δεν εξαρτάται από κανέναν προς αυτό που τα χρησιμοποιεί όλα.
+
+> Σε μεγάλες εφαρμογές, οι κλάσεις συχνά ομαδοποιούνται **ανά λειτουργία** (π.χ. `student/`, `grade/`, καθένα με
+> τον δικό του controller, model και repository) αντί για ανά ρόλο. Για ένα μικρό project όπως αυτό, η οργάνωση
+> ανά ρόλο είναι η πιο καθαρή.
+
+---
+
+## 7. Η οντότητα Student
 
 Δεξί κλικ στο **Source Packages → `gr.uniwa.ice.studentlab`** → **New → Java Package…** → όνομα
 `gr.uniwa.ice.studentlab.model` → **Finish**.
@@ -300,7 +360,7 @@ public class Student {
 
 ---
 
-## 7. Το StudentRepository
+## 8. Το StudentRepository
 
 Το **repository** είναι η κλάση που «αποθηκεύει» τα δεδομένα. Εδώ τα κρατάμε απλώς σε μια `List` στη μνήμη. Αργότερα, στη
 θέση της θα μπει μια βάση δεδομένων, χωρίς να αλλάξουν οι controllers.
@@ -338,9 +398,9 @@ public class StudentRepository {
 
 ---
 
-## 8. Η φόρμα καταχώρησης: controller και JSP
+## 9. Η φόρμα καταχώρησης: controller και JSP
 
-### 8.1 Ο controller
+### 9.1 Ο controller
 
 Φτιάξτε το package `gr.uniwa.ice.studentlab.controller` και μέσα του μια **Java Class** (όχι *Servlet*: ο οδηγός
 *New → Servlet* του NetBeans βάζει πολύ έτοιμο κώδικα που δεν χρειαζόμαστε) με όνομα `StudentFormController`:
@@ -495,7 +555,7 @@ response.sendRedirect(request.getContextPath() + "/students");
   ```
 
   Ο browser τη διαβάζει και κάνει μόνος του **νέο GET** στο `/studentlab/students`, που το χειρίζεται ο
-  `StudentListController`. Γιατί το κάνουμε έτσι (Post/Redirect/Get), εξηγείται στην [ενότητα 12](#12-πώς-δουλεύουν-όλα-μαζί).
+  `StudentListController`. Γιατί το κάνουμε έτσι (Post/Redirect/Get), εξηγείται στην [ενότητα 13](#13-πώς-δουλεύουν-όλα-μαζί).
 
 **Σύνοψη:** η `doPost` καταλήγει πάντα σε **ένα** από δύο αποτελέσματα:
 
@@ -504,7 +564,7 @@ response.sendRedirect(request.getContextPath() + "/students");
 | Λείπει κάποιο πεδίο     | `setAttribute` + `forward` + `return`| τη φόρμα ξανά, με μήνυμα και τα πεδία γεμάτα |
 | Όλα τα πεδία συμπληρωμένα | `save` + `sendRedirect`            | τη λίστα φοιτητών, με τον νέο φοιτητή        |
 
-### 8.2 Η JSP της φόρμας
+### 9.2 Η JSP της φόρμας
 
 Στο **Web Pages → WEB-INF**: δεξί κλικ → **New → Folder…** → όνομα `views` → **Finish**.
 Μετά, δεξί κλικ στο `views` → **New → JSP…** → όνομα `student-form` (το `.jsp` το βάζει μόνο του) → **Finish**.
@@ -565,9 +625,9 @@ response.sendRedirect(request.getContextPath() + "/students");
 
 ---
 
-## 9. Η λίστα φοιτητών: controller και JSP
+## 10. Η λίστα φοιτητών: controller και JSP
 
-### 9.1 Ο controller
+### 10.1 Ο controller
 
 Στο package `gr.uniwa.ice.studentlab.controller`, νέα **Java Class** με όνομα `StudentListController`:
 
@@ -608,7 +668,7 @@ public class StudentListController extends HttpServlet {
 
 Αυτό είναι το τυπικό σχήμα ενός controller: **παίρνει δεδομένα → τα βάζει στο request → κάνει forward σε μια JSP**.
 
-### 9.2 Η JSP της λίστας
+### 10.2 Η JSP της λίστας
 
 Δεξί κλικ στο `WEB-INF/views` → **New → JSP…** → όνομα `student-list`:
 
@@ -660,7 +720,7 @@ public class StudentListController extends HttpServlet {
 
 ---
 
-## 10. Η αρχική σελίδα
+## 11. Η αρχική σελίδα
 
 Ανοίξτε το **Web Pages → index.html** (αν δεν υπάρχει: δεξί κλικ στο **Web Pages** → **New → HTML…** → `index`),
 σβήστε το περιεχόμενο και επικολλήστε:
@@ -689,7 +749,7 @@ public class StudentListController extends HttpServlet {
 
 ---
 
-## 11. Εκτέλεση και δοκιμή
+## 12. Εκτέλεση και δοκιμή
 
 1. Δεξί κλικ στο project → **Run** (ή **F6**).
    Το NetBeans κάνει build, ξεκινά τον Tomcat (αν δεν τρέχει), κάνει deploy την εφαρμογή και ανοίγει τον browser στο
@@ -708,7 +768,7 @@ public class StudentListController extends HttpServlet {
 
 ---
 
-## 12. Πώς δουλεύουν όλα μαζί
+## 13. Πώς δουλεύουν όλα μαζί
 
 Τι γίνεται όταν ο χρήστης καταχωρεί έναν φοιτητή:
 
@@ -740,7 +800,7 @@ public class StudentListController extends HttpServlet {
 
 ---
 
-## 13. Επέκταση: validation στην κλάση Student
+## 14. Επέκταση: validation στην κλάση Student
 
 Μέχρι τώρα ο έλεγχος στον controller ήταν ένας: «όλα τα πεδία υποχρεωτικά», με ένα γενικό μήνυμα. Εδώ τον κάνουμε
 λίγο πιο πραγματικό:
@@ -751,7 +811,7 @@ public class StudentListController extends HttpServlet {
 
 Αλλάζουν τρία αρχεία: η `Student`, η `doPost` του `StudentFormController` και η `student-form.jsp`.
 
-### 13.1 Η μέθοδος validate() στη Student
+### 14.1 Η μέθοδος validate() στη Student
 
 Προσθέστε στην `Student` τα δύο imports και τις δύο μεθόδους (τα υπόλοιπα μένουν ίδια):
 
@@ -802,7 +862,7 @@ public class Student {
 - Το **`matches(...)`** ελέγχει το email με ένα απλό regular expression: «κάτι, `@`, κάτι, `.`, κάτι», χωρίς κενά.
   Είναι ενδεικτικός έλεγχος, όχι πλήρης.
 
-### 13.2 Ο controller χρησιμοποιεί τη validate()
+### 14.2 Ο controller χρησιμοποιεί τη validate()
 
 Αντικαταστήστε τη `doPost` και την `isBlank` του `StudentFormController` με τα παρακάτω, και προσθέστε το
 `import java.util.Map;`:
@@ -843,7 +903,7 @@ public class Student {
 Ο controller δεν ξέρει πια **ποιοι** είναι οι κανόνες. Ρωτά τη `Student` αν είναι έγκυρη και, αν δεν είναι,
 δίνει τα λάθη στη JSP ως attribute `errors`.
 
-### 13.3 Η φόρμα δείχνει το λάθος κάθε πεδίου
+### 14.3 Η φόρμα δείχνει το λάθος κάθε πεδίου
 
 Στη `student-form.jsp` αντικαταστήστε το `<c:if test="${not empty error}">…</c:if>` και τη `<form>` με:
 
@@ -880,7 +940,7 @@ public class Student {
   η τιμή είναι κενή και το `<c:out>` δεν γράφει τίποτα.
 - Την πρώτη φορά που ανοίγει η φόρμα (GET) δεν υπάρχει καθόλου `errors`, οπότε δεν εμφανίζεται κανένα μήνυμα.
 
-### 13.4 Δοκιμή και έλεγχος στον browser
+### 14.4 Δοκιμή και έλεγχος στον browser
 
 Πατήστε **Run** και δοκιμάστε:
 
@@ -904,9 +964,9 @@ public class Student {
 
 ---
 
-## 14. Επέκταση: επεξεργασία και διαγραφή φοιτητή
+## 15. Επέκταση: επεξεργασία και διαγραφή φοιτητή
 
-> Το βήμα αυτό προϋποθέτει το βήμα 13: η φόρμα επεξεργασίας χρησιμοποιεί την ίδια `validate()` και δείχνει τα λάθη
+> Το βήμα αυτό προϋποθέτει το βήμα 14: η φόρμα επεξεργασίας χρησιμοποιεί την ίδια `validate()` και δείχνει τα λάθη
 > με τον ίδιο τρόπο.
 
 Κάθε γραμμή του πίνακα της λίστας αποκτά δύο επιλογές: **Επεξεργασία** και **Διαγραφή**.
@@ -934,7 +994,7 @@ src/main/
     └── student-edit.jsp                    ΝΕΟ
 ```
 
-### 14.1 Ένα id για κάθε φοιτητή
+### 15.1 Ένα id για κάθε φοιτητή
 
 Όταν ο χρήστης πατά «Διαγραφή» σε μια γραμμή, ο server πρέπει να ξέρει **ποιον** φοιτητή εννοεί. Χρειαζόμαστε λοιπόν
 ένα μοναδικό **αναγνωριστικό** (id) για κάθε φοιτητή. Προσθέστε στη `Student` το πεδίο και τις δύο μεθόδους
@@ -1018,7 +1078,7 @@ public class StudentRepository {
 > από μια διαγραφή οι θέσεις μετακινούνται: αυτός που ήταν στη θέση 2 πάει στη θέση 1. Αν δύο χρήστες έχουν ανοιχτή
 > τη λίστα, ο ένας μπορεί να σβήσει λάθος φοιτητή. Το id μένει ίδιο για όλη τη ζωή του φοιτητή.
 
-### 14.2 Οι επιλογές στον πίνακα της λίστας
+### 15.2 Οι επιλογές στον πίνακα της λίστας
 
 Στη `student-list.jsp`, αντικαταστήστε το `<table>…</table>` με:
 
@@ -1064,7 +1124,7 @@ public class StudentRepository {
 > σε άλλη σελίδα. Οτιδήποτε αλλάζει δεδομένα (αποθήκευση, αλλαγή, διαγραφή) γίνεται με **POST**, και μετά
 > ακολουθεί redirect (Post/Redirect/Get).
 
-### 14.3 Ο controller της επεξεργασίας
+### 15.3 Ο controller της επεξεργασίας
 
 Στο package `gr.uniwa.ice.studentlab.controller`, νέα κλάση `StudentEditController`:
 
@@ -1118,7 +1178,7 @@ public class StudentEditController extends HttpServlet {
                 trim(request.getParameter("email")));
         student.setId(existing.getId());
 
-        // 2. Έλεγχος, όπως στο βήμα 13
+        // 2. Έλεγχος, όπως στο βήμα 14
         Map<String, String> errors = student.validate();
         if (!errors.isEmpty()) {
             request.setAttribute("errors", errors);
@@ -1183,7 +1243,7 @@ public class StudentEditController extends HttpServlet {
 > Setters θα χρειαστούν όταν μπουν frameworks που φτιάχνουν μόνα τους τα αντικείμενα (π.χ. JPA/Hibernate για
 > βάση δεδομένων, Jackson για JSON). Αυτά συνήθως θέλουν κενό constructor και setters (το λεγόμενο **JavaBean**).
 
-### 14.4 Η JSP της επεξεργασίας
+### 15.4 Η JSP της επεξεργασίας
 
 Δεξί κλικ στο `WEB-INF/views` → **New → JSP…** → όνομα `student-edit`:
 
@@ -1238,7 +1298,7 @@ public class StudentEditController extends HttpServlet {
   2. υπάρχει το **κρυφό πεδίο `id`**, ώστε η `doPost` να ξέρει ποιον φοιτητή αλλάζουμε.
 - Το «Άκυρο» είναι απλό link στη λίστα: δεν στέλνει τη φόρμα, οπότε δεν αλλάζει τίποτα.
 
-### 14.5 Ο controller της διαγραφής
+### 15.5 Ο controller της διαγραφής
 
 Στο package `gr.uniwa.ice.studentlab.controller`, νέα κλάση `StudentDeleteController`:
 
@@ -1290,7 +1350,7 @@ public class StudentDeleteController extends HttpServlet {
   `null`, το `||` σταματά εκεί και η `deleteById` δεν καλείται.
 - Δεν υπάρχει JSP διαγραφής. Μετά τη διαγραφή, το redirect μάς γυρίζει στη λίστα, όπου ο φοιτητής δεν υπάρχει πια.
 
-### 14.6 Δοκιμή
+### 15.6 Δοκιμή
 
 Πατήστε **Run** (οι φοιτητές της μνήμης χάνονται, οπότε προσθέστε ξανά τρεις) και δοκιμάστε:
 
@@ -1308,9 +1368,9 @@ public class StudentDeleteController extends HttpServlet {
 
 ---
 
-## 15. Επέκταση: σχέση 1 προς πολλά (Student → Grade)
+## 16. Επέκταση: σχέση 1 προς πολλά (Student → Grade)
 
-> Το βήμα αυτό προϋποθέτει τα βήματα 13 και 14: η νέα κλάση έχει κι αυτή μια `validate()`, η φόρμα δείχνει τα λάθη
+> Το βήμα αυτό προϋποθέτει τα βήματα 14 και 15: η νέα κλάση έχει κι αυτή μια `validate()`, η φόρμα δείχνει τα λάθη
 > με τον ίδιο τρόπο, και κάθε φοιτητής έχει ήδη το `id` του.
 
 Κάθε φοιτητής έχει **πολλούς βαθμούς** (π.χ. «Προγραμματισμός Διαδικτύου: 8»), ενώ κάθε βαθμός ανήκει σε **έναν**
@@ -1347,13 +1407,13 @@ src/main/
     └── student-details.jsp                 ΝΕΟ
 ```
 
-### 15.1 Το id του φοιτητή
+### 16.1 Το id του φοιτητή
 
 Για να «δείξει» ένας βαθμός σε έναν φοιτητή, ο φοιτητής χρειάζεται ένα μοναδικό **αναγνωριστικό** (id). Το έχουμε
-ήδη από το [βήμα 14.1](#141-ένα-id-για-κάθε-φοιτητή): η `Student` έχει `getId()` και το `StudentRepository` έχει
+ήδη από το [βήμα 15.1](#151-ένα-id-για-κάθε-φοιτητή): η `Student` έχει `getId()` και το `StudentRepository` έχει
 `findById`. Εδώ δεν αλλάζει τίποτα σε αυτά.
 
-### 15.2 Η οντότητα Grade
+### 16.2 Η οντότητα Grade
 
 Στο package `gr.uniwa.ice.studentlab.model`, νέα κλάση `Grade`:
 
@@ -1414,7 +1474,7 @@ public class Grade {
 > Μια άλλη λύση θα ήταν μια `List<Grade>` μέσα στη `Student`. Δουλεύει κι αυτή, αλλά εδώ κρατάμε κάθε οντότητα
 > στο δικό της repository, όπως θα είναι και στη βάση.
 
-### 15.3 Το GradeRepository
+### 16.3 Το GradeRepository
 
 Στο package `gr.uniwa.ice.studentlab.repository`, νέα κλάση `GradeRepository`:
 
@@ -1450,7 +1510,7 @@ public class GradeRepository {
 
 Η `findByStudentId` κάνει ό,τι θα έκανε σε SQL ένα `SELECT * FROM grade WHERE student_id = ?`.
 
-### 15.4 Ο controller της σελίδας του φοιτητή
+### 16.4 Ο controller της σελίδας του φοιτητή
 
 Όπως ο `StudentFormController`, ένας controller χειρίζεται και το GET (εμφάνιση) και το POST (νέος βαθμός) στο ίδιο URL.
 Στο package `gr.uniwa.ice.studentlab.controller`, νέα κλάση `StudentDetailsController`:
@@ -1506,7 +1566,7 @@ public class StudentDetailsController extends HttpServlet {
                 trim(request.getParameter("course")),
                 parseIntOrNull(request.getParameter("grade")));
 
-        // 2. Έλεγχος, όπως στο βήμα 13
+        // 2. Έλεγχος, όπως στο βήμα 14
         Map<String, String> errors = grade.validate();
         if (!errors.isEmpty()) {
             request.setAttribute("errors", errors);
@@ -1574,7 +1634,7 @@ public class StudentDetailsController extends HttpServlet {
 - Το **`showPage`** χρησιμοποιείται και από το GET και από το POST με λάθη, ώστε η σελίδα να έχει πάντα τα ίδια δεδομένα.
 - Μετά την επιτυχημένη αποθήκευση, το redirect **κρατά το id** στο URL, για να γυρίσουμε στον ίδιο φοιτητή.
 
-### 15.5 Η JSP της σελίδας του φοιτητή
+### 16.5 Η JSP της σελίδας του φοιτητή
 
 Δεξί κλικ στο `WEB-INF/views` → **New → JSP…** → όνομα `student-details`:
 
@@ -1644,7 +1704,7 @@ public class StudentDetailsController extends HttpServlet {
 - Το **`<fmt:formatNumber>`** (βιβλιοθήκη `fmt` της JSTL) δείχνει τον μέσο όρο με το πολύ δύο δεκαδικά, π.χ. `7,33`.
   Δεν χρειάζεται νέα dependency, γιατί είναι μέρος της ίδιας JSTL του βήματος 3.
 
-### 15.6 Link από τη λίστα στη σελίδα του φοιτητή
+### 16.6 Link από τη λίστα στη σελίδα του φοιτητή
 
 Στη `student-list.jsp`, αλλάξτε το κελί του επωνύμου ώστε να γίνει link:
 
@@ -1661,7 +1721,7 @@ public class StudentDetailsController extends HttpServlet {
 Το **`${student.id}`** καλεί την `getId()`, οπότε κάθε γραμμή οδηγεί σε άλλο URL: `/students/view?id=1`,
 `/students/view?id=2`, κ.ο.κ.
 
-### 15.7 Δοκιμή
+### 16.7 Δοκιμή
 
 Πατήστε **Run** (οι φοιτητές της μνήμης χάνονται, οπότε προσθέστε ξανά δύο‑τρεις) και δοκιμάστε:
 
@@ -1669,7 +1729,7 @@ public class StudentDetailsController extends HttpServlet {
 2. Προσθέστε δύο‑τρεις βαθμούς. Εμφανίζονται στον πίνακα και ο μέσος όρος αλλάζει.
 3. Ανοίξτε τη σελίδα ενός **άλλου** φοιτητή: δεν έχει βαθμούς. Κάθε βαθμός ανήκει σε έναν μόνο φοιτητή.
 4. Αφήστε το μάθημα κενό: εμφανίζεται το λάθος δίπλα στο πεδίο. Για να δείτε το μήνυμα του server για τον βαθμό
-   (π.χ. `11`), προσθέστε προσωρινά `novalidate` στη φόρμα, όπως στο βήμα 13.4.
+   (π.χ. `11`), προσθέστε προσωρινά `novalidate` στη φόρμα, όπως στο βήμα 14.4.
 5. Ανοίξτε με το χέρι <http://localhost:8080/studentlab/students/view?id=999> και
    <http://localhost:8080/studentlab/students/view?id=abc>. Και στις δύο περιπτώσεις παίρνετε **404**.
 
@@ -1686,8 +1746,8 @@ public class StudentDetailsController extends HttpServlet {
 | Η σελίδα δείχνει κυριολεκτικά `${student.name}` | Λείπει το `web.xml` ή είναι παλιάς έκδοσης (2.x). Χρησιμοποιήστε αυτό του βήματος 5. |
 | `The absolute uri: [jakarta.tags.core] cannot be resolved` | Λείπουν οι dependencies της JSTL από το `pom.xml` (βήμα 3). |
 | Τα ελληνικά εμφανίζονται ως `???` ή `ÎÎ±...` | Λείπει η πρώτη γραμμή `<%@ page contentType=... charset=UTF-8 ... %>` στη JSP, ή το `<request-character-encoding>` στο `web.xml`. |
-| `PropertyNotFoundException: Property [name] not found on type [...Student]` | Λείπει ο getter (`getName()`) στην `Student`, ή έχει άλλο όνομα. Το ίδιο ισχύει για το `id` στο βήμα 14 (`getId()`). |
-| (Βήμα 14) Όλα τα links της λίστας οδηγούν στο `?id=0` | Το `StudentRepository` δεν δίνει id: λείπει το `student.setId(nextId++)` στη `save`. |
+| `PropertyNotFoundException: Property [name] not found on type [...Student]` | Λείπει ο getter (`getName()`) στην `Student`, ή έχει άλλο όνομα. Το ίδιο ισχύει για το `id` στο βήμα 15 (`getId()`). |
+| (Βήμα 15) Όλα τα links της λίστας οδηγούν στο `?id=0` | Το `StudentRepository` δεν δίνει id: λείπει το `student.setId(nextId++)` στη `save`. |
 | Ο Tomcat δεν ξεκινά: `Address already in use` | Τρέχει ήδη άλλος server στη θύρα 8080. Σταματήστε τον ή αλλάξτε θύρα (δείτε [Servers.md, 3.9](Servers.md#39-αλλαγή-θύρας)). |
 
 ---
@@ -1696,19 +1756,19 @@ public class StudentDetailsController extends HttpServlet {
 
 1. Προσθέστε στη `Student` ένα τέταρτο πεδίο, **`am`** (αριθμός μητρώου). Χρειάζεται αλλαγή στην κλάση, στον controller,
    στη φόρμα και στον πίνακα.
-2. (Μετά το βήμα 13 και την άσκηση 1) Προσθέστε στη `validate()` κανόνα για το `am`: υποχρεωτικό και μόνο ψηφία.
+2. (Μετά το βήμα 14 και την άσκηση 1) Προσθέστε στη `validate()` κανόνα για το `am`: υποχρεωτικό και μόνο ψηφία.
    Υπόδειξη: `am.matches("\\d+")`.
 3. Εμφανίστε πάνω από τον πίνακα της λίστας το πλήθος των φοιτητών (Υπόδειξη: `${students.size()}`).
 4. Μην επιτρέπετε δύο φοιτητές με το ίδιο email. Προσθέστε στο `StudentRepository` μια μέθοδο
-   `existsByEmail(String email)` και χρησιμοποιήστε τη στον controller. Αν έχετε κάνει το βήμα 13, βάλτε το λάθος στο
+   `existsByEmail(String email)` και χρησιμοποιήστε τη στον controller. Αν έχετε κάνει το βήμα 14, βάλτε το λάθος στο
    ίδιο `errors` Map, με κλειδί `"email"`. Ο κανόνας αυτός μπαίνει στον controller και όχι στη `validate()`, γιατί
    χρειάζεται το repository: μια μεμονωμένη `Student` δεν ξέρει ποιοι άλλοι φοιτητές υπάρχουν.
 5. Φτιάξτε έναν τρίτο controller, `/students/search?surname=...`, που εμφανίζει μόνο τους φοιτητές με το επώνυμο που δόθηκε.
    Ξαναχρησιμοποιήστε τη `student-list.jsp`.
-6. (Μετά το βήμα 15) Προσθέστε στη λίστα φοιτητών μια στήλη «Βαθμοί» με το πλήθος των βαθμών κάθε φοιτητή.
+6. (Μετά το βήμα 16) Προσθέστε στη λίστα φοιτητών μια στήλη «Βαθμοί» με το πλήθος των βαθμών κάθε φοιτητή.
    Υπόδειξη: ο controller μπορεί να φτιάξει ένα `Map<Integer, Integer>` (id φοιτητή → πλήθος) και η JSP να γράψει
    `${gradeCounts[student.id]}`.
-7. (Μετά το βήμα 15) Μια δεύτερη σχέση 1 προς πολλά: **Department → Student**. Κάθε φοιτητής ανήκει σε ένα τμήμα.
+7. (Μετά το βήμα 16) Μια δεύτερη σχέση 1 προς πολλά: **Department → Student**. Κάθε φοιτητής ανήκει σε ένα τμήμα.
    - Φτιάξτε τη `Department` (`id`, `name`) και ένα `DepartmentRepository` με 3–4 τμήματα έτοιμα από την αρχή
      (σε ένα `static { ... }` block).
    - Προσθέστε στη `Student` ένα πεδίο `departmentId`.
@@ -1716,6 +1776,6 @@ public class StudentDetailsController extends HttpServlet {
      Προσοχή: η `doGet` του `StudentFormController` πρέπει τώρα να βάζει τη λίστα των τμημάτων ως attribute.
    - Στη `validate()` ή στον controller, ελέγξτε ότι το τμήμα που στάλθηκε υπάρχει.
    - Προαιρετικά, φτιάξτε μια σελίδα `/departments/view?id=...` με τους φοιτητές του τμήματος.
-8. (Μετά τα βήματα 14 και 15) Όταν διαγράφεται ένας φοιτητής, οι βαθμοί του μένουν στο `GradeRepository` χωρίς
+8. (Μετά τα βήματα 15 και 16) Όταν διαγράφεται ένας φοιτητής, οι βαθμοί του μένουν στο `GradeRepository` χωρίς
    φοιτητή («ορφανά» δεδομένα). Προσθέστε στο `GradeRepository` μια μέθοδο `deleteByStudentId(int studentId)` και
    καλέστε τη από τον `StudentDeleteController`. Σε μια βάση δεδομένων το ίδιο γίνεται με `ON DELETE CASCADE`.
