@@ -775,9 +775,6 @@ public class StudentListController extends HttpServlet {
 
 ![Ροή καταχώρησης φοιτητή: GET φόρμας, POST, redirect, GET λίστας](images/lab-form-flow.png)
 
-> Η πηγή του διαγράμματος (Mermaid) είναι στο [images/lab-form-flow.mmd](images/lab-form-flow.mmd).
-> Για να ξαναφτιάξετε την εικόνα: `mmdc -i images/lab-form-flow.mmd -o images/lab-form-flow.png -s 2 -b white`.
-
 **Γιατί redirect μετά το POST;** Αν ο controller έκανε απευθείας forward στη λίστα, ο browser θα έμενε στο URL του POST. Ένα
 **Refresh (F5)** τότε θα ξανάστελνε τη φόρμα και θα αποθήκευε τον ίδιο φοιτητή δεύτερη φορά. Με το redirect, ο browser
 καταλήγει σε ένα απλό GET στο `/students`, που μπορεί να γίνει refresh όσες φορές θέλουμε.
@@ -1743,9 +1740,9 @@ public class StudentDetailsController extends HttpServlet {
 
 **Τι προσέχουμε:**
 
-- Τα parameters είναι **πάντα `String`**. Το `?id=3` έρχεται ως `"3"` και το μετατρέπουμε σε αριθμό με
-  **`Integer.parseInt`**. Αν ο χρήστης γράψει `?id=abc`, η `parseInt` πετά `NumberFormatException`, που την πιάνουμε.
-- Αν ο φοιτητής δεν βρεθεί, απαντάμε με **404** (`response.sendError`), όπως για μια σελίδα που δεν υπάρχει.
+- Το `id`, το `findStudent`, το `parseIntOrNull` και το **404** όταν ο φοιτητής δεν βρεθεί δουλεύουν ακριβώς όπως στον
+  `StudentEditController` ([15.3](#153-ο-controller-της-επεξεργασίας)). Εδώ το `parseIntOrNull` χρησιμοποιείται και για
+  τον **βαθμό**: αν ο χρήστης γράψει `abc`, παίρνουμε `null` και η `validate()` της `Grade` βγάζει το αντίστοιχο λάθος.
 - Το **`showPage`** χρησιμοποιείται και από το GET και από το POST με λάθη, ώστε η σελίδα να έχει πάντα τα ίδια δεδομένα.
 - Μετά την επιτυχημένη αποθήκευση, το redirect **κρατά το id** στο URL, για να γυρίσουμε στον ίδιο φοιτητή.
 
@@ -1816,7 +1813,9 @@ public class StudentDetailsController extends HttpServlet {
 
 - Το **`<input type="hidden" name="id">`** δεν φαίνεται στη σελίδα, αλλά στέλνεται μαζί με τη φόρμα. Έτσι η `doPost`
   ξέρει σε ποιον φοιτητή ανήκει ο νέος βαθμός.
-- Το **`<fmt:formatNumber>`** (βιβλιοθήκη `fmt` της JSTL) δείχνει τον μέσο όρο με το πολύ δύο δεκαδικά, π.χ. `7,33`.
+- Το **`<fmt:formatNumber>`** (βιβλιοθήκη `fmt` της JSTL) δείχνει τον μέσο όρο με το πολύ δύο δεκαδικά.
+  Το διαχωριστικό των δεκαδικών εξαρτάται από τη **γλώσσα του browser** (header `Accept-Language`): σε ελληνικό
+  browser βλέπουμε `7,33`, σε αγγλικό `7.33`.
   Δεν χρειάζεται νέα dependency, γιατί είναι μέρος της ίδιας JSTL του βήματος 3.
 
 ### 16.6 Link από τη λίστα στη σελίδα του φοιτητή
