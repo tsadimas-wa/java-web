@@ -1071,6 +1071,7 @@ public class Student {
 
 > **Αν κάνατε την εξάσκηση με το `am`:** έχετε ήδη το μεγαλύτερο μέρος των 15.1 και 15.2. Συγκρίνετε τον κώδικά σας με
 > αυτόν που δίνεται εδώ και προσθέστε ό,τι λείπει (τον έλεγχο για διπλό ΑΜ και τις νέες μεθόδους του repository).
+> Προσοχή: στην εξάσκηση ο ΑΜ ήταν `String`, ενώ εδώ γίνεται **`int`**.
 
 Κάθε φοιτητής αποκτά **δική του σελίδα**, με URL που περιέχει τον **αριθμό μητρώου** (ΑΜ) του: `/students/21390001`,
 `/students/21390002`, … Από τη λίστα, ο ΑΜ γίνεται link σε αυτή τη σελίδα. Στη σελίδα του φοιτητή υπάρχουν δύο
@@ -1130,9 +1131,9 @@ public class Student {
     private String name;
     private String surname;
     private String email;
-    private String am;   // αριθμός μητρώου: το κλειδί του φοιτητή
+    private int am;      // αριθμός μητρώου: το κλειδί του φοιτητή
 
-    public Student(String name, String surname, String email, String am) {
+    public Student(String name, String surname, String email, int am) {
         this.name = name;
         this.surname = surname;
         this.email = email;
@@ -1151,7 +1152,7 @@ public class Student {
         return email;
     }
 
-    public String getAm() {
+    public int getAm() {
         return am;
     }
 
@@ -1174,10 +1175,8 @@ public class Student {
             errors.put("email", "Μη έγκυρο email.");
         }
 
-        if (isBlank(am)) {
-            errors.put("am", "Ο ΑΜ είναι υποχρεωτικός.");
-        } else if (!am.matches("\\d+")) {
-            errors.put("am", "Ο ΑΜ πρέπει να έχει μόνο ψηφία.");
+        if (am <= 0) {
+            errors.put("am", "Ο ΑΜ πρέπει να είναι θετικός ακέραιος αριθμός.");
         }
 
         return errors;
@@ -1189,9 +1188,9 @@ public class Student {
 }
 ```
 
-Ο κανόνας **`am.matches("\\d+")`** («ένα ή περισσότερα ψηφία») δεν είναι μόνο για την εμφάνιση: ο ΑΜ θα μπει μέσα
-στο URL (`/students/21390001`), οπότε δεν πρέπει να περιέχει `/`, κενά ή λέξεις όπως `new` και `edit`, που είναι ήδη
-URLs της εφαρμογής.
+Ο ΑΜ είναι **`int`**. Η φόρμα όμως στέλνει πάντα κείμενο (`String`), οπότε τη μετατροπή σε αριθμό την κάνει ο
+controller (15.2). Αν ο χρήστης γράψει κάτι που δεν είναι αριθμός (ή τίποτα), ο controller περνά `0`, και ο κανόνας
+**`am <= 0`** της `validate()` το απορρίπτει μαζί με τους αρνητικούς.
 
 Το repository βρίσκει, αλλάζει και σβήνει φοιτητές **με βάση τον ΑΜ**. Αντικαταστήστε το `StudentRepository` με:
 
@@ -1217,9 +1216,9 @@ public class StudentRepository {
     }
 
     // Επιστρέφει τον φοιτητή με αυτόν τον ΑΜ, ή null αν δεν υπάρχει
-    public static synchronized Student findByAm(String am) {
+    public static synchronized Student findByAm(int am) {
         for (Student student : students) {
-            if (student.getAm().equals(am)) {
+            if (student.getAm() == am) {
                 return student;
             }
         }
@@ -1229,7 +1228,7 @@ public class StudentRepository {
     // Αντικαθιστά τον φοιτητή που έχει τον ίδιο ΑΜ. Επιστρέφει false αν δεν βρέθηκε.
     public static synchronized boolean update(Student student) {
         for (int i = 0; i < students.size(); i++) {
-            if (students.get(i).getAm().equals(student.getAm())) {
+            if (students.get(i).getAm() == student.getAm()) {
                 students.set(i, student);
                 return true;
             }
@@ -1238,20 +1237,17 @@ public class StudentRepository {
     }
 
     // Σβήνει τον φοιτητή με αυτόν τον ΑΜ. Επιστρέφει false αν δεν βρέθηκε.
-    public static synchronized boolean deleteByAm(String am) {
-        return students.removeIf(student -> student.getAm().equals(am));
+    public static synchronized boolean deleteByAm(int am) {
+        return students.removeIf(student -> student.getAm() == am);
     }
 }
 ```
 
-- Ο ΑΜ είναι **`String`**, οπότε συγκρίνουμε με **`equals`** και **όχι** με `==`. Το `==` σε αντικείμενα ελέγχει αν
-  είναι **το ίδιο αντικείμενο** στη μνήμη, όχι αν έχουν το ίδιο περιεχόμενο. Ο ΑΜ που έρχεται από το URL είναι
-  καινούριο `String`, οπότε το `==` θα έβγαζε σχεδόν πάντα `false`.
-- Το `student.getAm().equals(am)` δουλεύει και όταν το `am` είναι `null`: απλώς επιστρέφει `false`. Έτσι η `findByAm(null)`
-  επιστρέφει `null` χωρίς `NullPointerException`.
+- Ο ΑΜ είναι **`int`**, οπότε συγκρίνουμε με **`==`**. Αν ήταν `String` (ή `Integer`), θα έπρεπε να γράψουμε
+  `equals`: το `==` σε **αντικείμενα** ελέγχει αν είναι το ίδιο αντικείμενο στη μνήμη, όχι αν έχουν την ίδια τιμή.
 - Η **`update`** ψάχνει τη θέση του φοιτητή με τον ίδιο ΑΜ και βάζει στη θέση του το νέο αντικείμενο (`set(i, ...)`).
 - Η **`deleteByAm`** χρησιμοποιεί τη **`removeIf`**, που σβήνει από τη λίστα όσα στοιχεία ικανοποιούν τη συνθήκη.
-  Το `student -> student.getAm().equals(am)` είναι ένα **lambda**: μια μικρή συνάρτηση που, για κάθε `student`,
+  Το `student -> student.getAm() == am` είναι ένα **lambda**: μια μικρή συνάρτηση που, για κάθε `student`,
   επιστρέφει `true` αν πρέπει να σβηστεί. Η `removeIf` επιστρέφει `true` αν έσβησε κάτι.
 
 > **Γιατί όχι η θέση στη λίστα;** Θα μπορούσαμε να χρησιμοποιούμε τη θέση του φοιτητή (0, 1, 2, …) αντί για κλειδί.
@@ -1261,14 +1257,16 @@ public class StudentRepository {
 
 > **Φυσικό ή τεχνητό κλειδί;** Ο ΑΜ είναι **φυσικό κλειδί** (natural key): έχει νόημα έξω από την εφαρμογή και τον
 > πληκτρολογεί ο χρήστης. Το μειονέκτημα είναι ότι, ως κλειδί, **δεν αλλάζει**: αν γραφτεί λάθος, ο φοιτητής πρέπει
-> να σβηστεί και να καταχωρηθεί ξανά. Γι' αυτό σε πολλές βάσεις δεδομένων κάθε πίνακας έχει ένα **τεχνητό κλειδί**
+> να σβηστεί και να καταχωρηθεί ξανά. Επιπλέον, ως `int` χάνει τυχόν μηδενικά στην αρχή (`0123` → `123`) και δεν
+> μπορεί να ξεπεράσει το `2.147.483.647`. Γι' αυτό σε πολλές βάσεις δεδομένων κάθε πίνακας έχει ένα **τεχνητό κλειδί**
 > (surrogate key), συνήθως έναν αριθμό `id` που δίνει μόνη της η βάση (auto‑increment), και ο ΑΜ δηλώνεται απλώς
 > `UNIQUE`. Εδώ ο ΑΜ αρκεί και είναι πιο φυσικός στα URLs.
 
 ### 15.2 Ο ΑΜ στη φόρμα καταχώρησης
 
 Ο constructor της `Student` θέλει πλέον τέσσερα ορίσματα, οπότε ο `StudentFormController` δεν κάνει compile. Στη
-`doPost` του διαβάζουμε και τον ΑΜ, και ελέγχουμε ότι **δεν υπάρχει ήδη** φοιτητής με αυτόν. Αντικαταστήστε τη `doPost`:
+`doPost` του διαβάζουμε και τον ΑΜ, τον μετατρέπουμε σε αριθμό, και ελέγχουμε ότι **δεν υπάρχει ήδη** φοιτητής με
+αυτόν. Αντικαταστήστε τη `doPost` και προσθέστε τη μέθοδο `parseIntOrNull`:
 
 **Αρχείο:** `src/main/java/gr/uniwa/ice/studentlab/controller/StudentFormController.java`
 
@@ -1278,12 +1276,14 @@ public class StudentRepository {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        // 1. Διαβάζουμε τα πεδία και φτιάχνουμε το αντικείμενο
+        // 1. Διαβάζουμε τα πεδία και φτιάχνουμε το αντικείμενο.
+        //    Ο ΑΜ έρχεται ως String: αν δεν είναι αριθμός, περνάμε 0 και η validate() θα τον απορρίψει.
+        Integer am = parseIntOrNull(request.getParameter("am"));
         Student student = new Student(
                 trim(request.getParameter("name")),
                 trim(request.getParameter("surname")),
                 trim(request.getParameter("email")),
-                trim(request.getParameter("am")));
+                am == null ? 0 : am);
 
         // 2. Ο έλεγχος των πεδίων γίνεται από την ίδια τη Student
         Map<String, String> errors = student.validate();
@@ -1303,11 +1303,28 @@ public class StudentRepository {
         StudentRepository.save(student);
         response.sendRedirect(request.getContextPath() + "/students");
     }
+
+    // "21390001" → 21390001, ενώ null, "", "abc" → null
+    private Integer parseIntOrNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
 ```
+
+- Η **`parseIntOrNull`** καλεί την `Integer.parseInt`. Αν η τιμή λείπει ή δεν είναι ακέραιος (π.χ. `12a`), η
+  `parseInt` πετάει `NumberFormatException`, την πιάνουμε και επιστρέφουμε `null`. Ο τύπος επιστροφής είναι
+  **`Integer`** και όχι `int`, γιατί ένα `int` δεν μπορεί να είναι `null`. Το `am == null ? 0 : am` δίνει στη `Student`
+  έναν «άκυρο» ΑΜ, που η `validate()` θα απορρίψει με το κατάλληλο μήνυμα.
 
 Ο έλεγχος για διπλό ΑΜ μπαίνει στον **controller** και όχι στη `validate()`, γιατί χρειάζεται το repository: μια
 μεμονωμένη `Student` δεν ξέρει ποιοι άλλοι φοιτητές υπάρχουν. Το `!errors.containsKey("am")` αποφεύγει να ψάξουμε
-στο repository όταν ο ΑΜ είναι ήδη λάθος (π.χ. κενός).
+στο repository όταν ο ΑΜ είναι ήδη λάθος (π.χ. δεν είναι αριθμός).
 
 Στη `student-form.jsp`, προσθέστε ένα ακόμη `<p>` μέσα στη `<form>`, πριν από το κουμπί:
 
@@ -1357,10 +1374,11 @@ public class StudentViewController extends HttpServlet {
 
         // 1. Το path variable: για το /students/21390001 η getPathInfo() δίνει "/21390001"
         String pathInfo = request.getPathInfo();
-        String am = (pathInfo == null) ? "" : pathInfo.substring(1);   // πετάμε το αρχικό "/" → "21390001"
+        String amText = (pathInfo == null) ? null : pathInfo.substring(1);   // πετάμε το αρχικό "/" → "21390001"
+        Integer am = parseIntOrNull(amText);                                  // "21390001" → 21390001
 
         // 2. Βρίσκουμε τον φοιτητή με αυτόν τον ΑΜ
-        Student student = StudentRepository.findByAm(am);
+        Student student = (am == null) ? null : StudentRepository.findByAm(am);
         if (student == null) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "Δεν βρέθηκε ο φοιτητής.");
             return;
@@ -1369,6 +1387,18 @@ public class StudentViewController extends HttpServlet {
         // 3. Τον δίνουμε στη JSP
         request.setAttribute("student", student);
         request.getRequestDispatcher("/WEB-INF/views/student-view.jsp").forward(request, response);
+    }
+
+    // "21390001" → 21390001, ενώ null, "", "abc" → null
+    private Integer parseIntOrNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }
 ```
@@ -1384,18 +1414,19 @@ public class StudentViewController extends HttpServlet {
 | `request.getParameter("x")`   | `1`             | μία τιμή από το query string                           |
 
 - Το `getPathInfo()` επιστρέφει **`String`** που ξεκινά με `/`. Γι' αυτό το `substring(1)` πετάει τον πρώτο χαρακτήρα
-  και μένει ο ΑΜ. Ο ΑΜ είναι ήδη `String`, οπότε δεν χρειάζεται καμία μετατροπή.
+  και μένει το `"21390001"`. Είναι ακόμα κείμενο, οπότε το μετατρέπουμε σε `int` με την **`parseIntOrNull`**, όπως
+  στο 15.2.
 - Αν το URL είναι σκέτο `/students/`, δεν περισσεύει τίποτα μετά το `/students` και το `getPathInfo()` μπορεί να
-  επιστρέψει `null`. Τότε βάζουμε `""` στο `am`, ώστε η `findByAm` απλώς να μη βρει κανέναν.
-- Αν το URL είναι `/students/abc`, `/students/` ή `/students/21390001/x`, ο «ΑΜ» που βγαίνει (`abc`, `""`,
-  `21390001/x`) δεν ανήκει σε κανέναν φοιτητή, η `findByAm` επιστρέφει `null` και απαντάμε με **404**
-  (`response.sendError`).
+  επιστρέψει `null`. Τότε το `amText` είναι `null` και η `parseIntOrNull` επιστρέφει κι αυτή `null`.
+- Αν το URL είναι `/students/abc` ή `/students/21390001/x`, η `parseInt` πετάει `NumberFormatException` και
+  παίρνουμε `null`. Σε όλες αυτές τις περιπτώσεις, όπως και όταν ο αριθμός δεν ανήκει σε κανέναν φοιτητή,
+  απαντάμε με **404** (`response.sendError`).
 
 > **Δεν «κλέβει» το `/students/*` τα υπόλοιπα URLs;** Το `/students/*` ταιριάζει και με το `/students/new` και με το
 > `/students`. Ο Tomcat όμως διαλέγει πάντα το **πιο συγκεκριμένο** mapping: ένα **ακριβές** URL (`/students`,
 > `/students/new`, και αργότερα `/students/edit`, `/students/delete`) κερδίζει ένα πρόθεμα με `/*`. Έτσι στον
-> `StudentViewController` φτάνουν μόνο όσα URLs δεν έχουν δικό τους controller. Και επειδή ο ΑΜ έχει μόνο ψηφία
-> (κανόνας της `validate()`), κανένας φοιτητής δεν μπορεί να έχει ΑΜ `new` ή `edit`.
+> `StudentViewController` φτάνουν μόνο όσα URLs δεν έχουν δικό τους controller. Και επειδή ο ΑΜ είναι
+> αριθμός, κανένας φοιτητής δεν μπορεί να έχει ΑΜ `new` ή `edit`.
 
 > **Path variable ή query parameter;** Και τα δύο στέλνουν μια τιμή μέσα στο URL, και τα δύο φτάνουν στον server ως
 > `String`. Η συνηθισμένη σύμβαση είναι:
@@ -1405,8 +1436,8 @@ public class StudentViewController extends HttpServlet {
 > - **query parameter** (`/students?sort=surname&page=2`) για **επιλογές**: ταξινόμηση, φίλτρα, σελίδα αποτελεσμάτων.
 >
 > Στα frameworks αυτό γίνεται πιο απλό. Στο Spring, για παράδειγμα, γράφουμε `@GetMapping("/students/{am}")` και
-> μια παράμετρο `@PathVariable String am`: το framework κάνει μόνο του το `getPathInfo()` και το `substring` που
-> γράψαμε εδώ με το χέρι.
+> μια παράμετρο `@PathVariable int am`: το framework κάνει μόνο του το `getPathInfo()`, το `substring` και το
+> `parseInt` που γράψαμε εδώ με το χέρι.
 
 ### 15.4 Η JSP της προβολής
 
@@ -1537,7 +1568,7 @@ public class StudentEditController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        Student student = StudentRepository.findByAm(request.getParameter("am"));
+        Student student = findStudent(request);
         if (student == null) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "Δεν βρέθηκε ο φοιτητής.");
             return;
@@ -1551,7 +1582,7 @@ public class StudentEditController extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        Student existing = StudentRepository.findByAm(request.getParameter("am"));
+        Student existing = findStudent(request);
         if (existing == null) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "Δεν βρέθηκε ο φοιτητής.");
             return;
@@ -1578,6 +1609,24 @@ public class StudentEditController extends HttpServlet {
         response.sendRedirect(request.getContextPath() + "/students/" + student.getAm());
     }
 
+    // Διαβάζει τον ΑΜ (από το ?am=... ή από το κρυφό πεδίο της φόρμας) και βρίσκει τον φοιτητή
+    private Student findStudent(HttpServletRequest request) {
+        Integer am = parseIntOrNull(request.getParameter("am"));
+        return (am == null) ? null : StudentRepository.findByAm(am);
+    }
+
+    // "21390001" → 21390001, ενώ null, "", "abc" → null
+    private Integer parseIntOrNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     private String trim(String value) {
         return value == null ? "" : value.trim();
     }
@@ -1586,11 +1635,13 @@ public class StudentEditController extends HttpServlet {
 
 **Τι προσέχουμε:**
 
-- Ο **ΑΜ** έρχεται ως parameter: στο GET από το URL (`?am=21390001`) και στο POST από το κρυφό πεδίο της φόρμας. Η
-  `getParameter("am")` διαβάζει και τα δύο με τον ίδιο τρόπο. Αν λείπει, επιστρέφει `null`, η `findByAm(null)`
-  επιστρέφει `null`, και απαντάμε με **404**.
-- Σύγκριση με τον `StudentViewController`: εκεί τον ΑΜ τον βγάζαμε **εμείς** από τη διαδρομή (`getPathInfo()` +
-  `substring`). Εδώ ο Tomcat έχει ήδη «σπάσει» το query string και μας δίνει την τιμή με το όνομά της.
+- Ο **ΑΜ** έρχεται ως parameter, άρα ως `String`: στο GET από το URL (`?am=21390001`) και στο POST από το κρυφό
+  πεδίο της φόρμας. Η `getParameter("am")` διαβάζει και τα δύο με τον ίδιο τρόπο. Η **`findStudent`** τον μετατρέπει
+  σε αριθμό και βρίσκει τον φοιτητή. Τη χρειάζονται και η `doGet` και η `doPost`, γι' αυτό είναι ξεχωριστή μέθοδος.
+- Αν ο ΑΜ λείπει ή δεν είναι αριθμός (`?am=abc`), η `parseIntOrNull` επιστρέφει `null` και απαντάμε με **404**.
+- Σύγκριση με τον `StudentViewController`: εκεί το κείμενο του ΑΜ το βγάζαμε **εμείς** από τη διαδρομή
+  (`getPathInfo()` + `substring`). Εδώ ο Tomcat έχει ήδη «σπάσει» το query string και μας δίνει την τιμή με το
+  όνομά της. Τη μετατροπή σε `int` όμως την κάνουμε και στις δύο περιπτώσεις.
 - Ο ΑΜ **δεν αλλάζει**, γιατί είναι το κλειδί. Η φόρμα δεν έχει πεδίο για να τον γράψει ο χρήστης, και στο νέο
   αντικείμενο βάζουμε τον ΑΜ του `existing`. Γι' αυτό δεν χρειάζεται ούτε ο έλεγχος για διπλό ΑΜ του 15.2.
 - Μετά την επιτυχημένη αποθήκευση, το redirect πάει στη **σελίδα του φοιτητή**: φτιάχνουμε το URL
@@ -1608,7 +1659,7 @@ public class StudentEditController extends HttpServlet {
 >   (`${student.name}` → `getName()`).
 > - **Προστατεύουν τα αποθηκευμένα δεδομένα.** Η `findByAm()` επιστρέφει το **ίδιο** αντικείμενο που κρατά το
 >   repository (και η `findAll()` αντίγραφο της λίστας, όχι των φοιτητών). Αν υπήρχε `setName`, ένας controller θα
->   μπορούσε να γράψει `StudentRepository.findByAm("21390001").setName("")` και να αλλάξει τον αποθηκευμένο φοιτητή
+>   μπορούσε να γράψει `StudentRepository.findByAm(21390001).setName("")` και να αλλάξει τον αποθηκευμένο φοιτητή
 >   χωρίς `validate()` και χωρίς `update()`. Χωρίς setters αυτό δεν κάνει καν compile: ο μόνος τρόπος να αλλάξει
 >   ένας φοιτητής είναι αυτός που είδαμε εδώ: νέο αντικείμενο → έλεγχος → `StudentRepository.update(...)`.
 > - **Ειδικά για τον ΑΜ**, ένα `setAm` θα ήταν και επικίνδυνο: αν άλλαζε το κλειδί ενός φοιτητή, τα links και οι
@@ -1703,18 +1754,33 @@ public class StudentDeleteController extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        if (!StudentRepository.deleteByAm(request.getParameter("am"))) {
+        Integer am = parseIntOrNull(request.getParameter("am"));
+        if (am == null || !StudentRepository.deleteByAm(am)) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "Δεν βρέθηκε ο φοιτητής.");
             return;
         }
         response.sendRedirect(request.getContextPath() + "/students");
+    }
+
+    // "21390001" → 21390001, ενώ null, "", "abc" → null
+    private Integer parseIntOrNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 }
 ```
 
 - Ο controller έχει **μόνο `doPost`**. Αν κάποιος ανοίξει το `/students/delete` από τον browser (GET), η `doGet` που
   κληρονομεί από την `HttpServlet` απαντά μόνη της με **405 Method Not Allowed**. Δεν χρειάζεται να γράψουμε κάτι.
-- Αν ο ΑΜ λείπει ή δεν υπάρχει, η `deleteByAm` δεν σβήνει τίποτα και επιστρέφει `false`, οπότε απαντάμε με **404**.
+- Το `am == null || !StudentRepository.deleteByAm(am)` χρησιμοποιεί το ίδιο κόλπο με την `isBlank`: αν το `am` είναι
+  `null` (λείπει ή δεν είναι αριθμός), το `||` σταματά εκεί και η `deleteByAm` δεν καλείται. Αν ο ΑΜ είναι αριθμός
+  αλλά δεν υπάρχει, η `deleteByAm` επιστρέφει `false`. Και στις δύο περιπτώσεις απαντάμε με **404**.
 - Δεν υπάρχει JSP διαγραφής. Μετά τη διαγραφή, το redirect μάς γυρίζει στη **λίστα**: η σελίδα του φοιτητή δεν
   υπάρχει πια, οπότε ένα redirect στο `/students/21390001` θα έδινε 404.
 
@@ -1724,7 +1790,7 @@ public class StudentDeleteController extends HttpServlet {
 
 1. Καταχωρήστε τρεις φοιτητές με ΑΜ `21390001`, `21390002`, `21390003`. Η λίστα έχει πλέον στήλη «ΑΜ».
 2. Καταχωρήστε άλλον έναν με ΑΜ `21390002`: εμφανίζεται «Υπάρχει ήδη φοιτητής με αυτόν τον ΑΜ.». Με ΑΜ `12a`:
-   «Ο ΑΜ πρέπει να έχει μόνο ψηφία.».
+   «Ο ΑΜ πρέπει να είναι θετικός ακέραιος αριθμός.».
 3. Στη λίστα, πατήστε στον ΑΜ `21390002`. Το URL γίνεται `/studentlab/students/21390002` και βλέπετε τα στοιχεία του.
 4. Αλλάξτε με το χέρι το URL σε `/studentlab/students/21390003`: βλέπετε τον τρίτο φοιτητή. Το ίδιο URL δείχνει
    πάντα τον ίδιο φοιτητή, οπότε μπορεί να γίνει bookmark ή να σταλεί σε κάποιον άλλο.
@@ -1803,17 +1869,17 @@ import java.util.Map;
 
 public class Grade {
 
-    private String studentAm;  // σε ποιον φοιτητή ανήκει ο βαθμός
+    private int studentAm;     // σε ποιον φοιτητή ανήκει ο βαθμός
     private String course;
     private Integer grade;     // Integer και όχι int: null σημαίνει «δεν δόθηκε αριθμός»
 
-    public Grade(String studentAm, String course, Integer grade) {
+    public Grade(int studentAm, String course, Integer grade) {
         this.studentAm = studentAm;
         this.course = course;
         this.grade = grade;
     }
 
-    public String getStudentAm() {
+    public int getStudentAm() {
         return studentAm;
     }
 
@@ -1872,10 +1938,10 @@ public class GradeRepository {
     }
 
     // Όλοι οι βαθμοί ενός φοιτητή: η πλευρά «πολλά» της σχέσης
-    public static synchronized List<Grade> findByStudentAm(String studentAm) {
+    public static synchronized List<Grade> findByStudentAm(int studentAm) {
         List<Grade> result = new ArrayList<>();
         for (Grade grade : grades) {
-            if (grade.getStudentAm().equals(studentAm)) {
+            if (grade.getStudentAm() == studentAm) {
                 result.add(grade);
             }
         }
@@ -1885,7 +1951,7 @@ public class GradeRepository {
 ```
 
 Η `findByStudentAm` κάνει ό,τι θα έκανε σε SQL ένα `SELECT * FROM grade WHERE student_am = ?`. Όπως στο
-`StudentRepository`, η σύγκριση των ΑΜ γίνεται με **`equals`**, όχι με `==`.
+`StudentRepository`, οι ΑΜ είναι `int` και συγκρίνονται με **`==`**.
 
 ### 16.4 Ο controller της σελίδας του φοιτητή
 
@@ -1942,7 +2008,7 @@ public class StudentViewController extends HttpServlet {
         Grade grade = new Grade(
                 student.getAm(),
                 trim(request.getParameter("course")),
-                parseIntOrNull(trim(request.getParameter("grade"))));
+                parseIntOrNull(request.getParameter("grade")));
 
         // 2. Έλεγχος, όπως στο βήμα 14
         Map<String, String> errors = grade.validate();
@@ -1972,8 +2038,9 @@ public class StudentViewController extends HttpServlet {
     // Τα βήματα 1 και 2 της doGet του 15.3: ΑΜ από το path → φοιτητής (ή null)
     private Student findStudent(HttpServletRequest request) {
         String pathInfo = request.getPathInfo();
-        String am = (pathInfo == null) ? "" : pathInfo.substring(1);   // "/21390001" → "21390001"
-        return StudentRepository.findByAm(am);
+        String amText = (pathInfo == null) ? null : pathInfo.substring(1);   // "/21390001" → "21390001"
+        Integer am = parseIntOrNull(amText);                                  // "21390001" → 21390001
+        return (am == null) ? null : StudentRepository.findByAm(am);
     }
 
     private Double average(List<Grade> grades) {
@@ -1987,10 +2054,13 @@ public class StudentViewController extends HttpServlet {
         return (double) sum / grades.size();
     }
 
-    // "8" → 8, ενώ "" ή "abc" → null
+    // "21390001" → 21390001, ενώ null, "", "abc" → null
     private Integer parseIntOrNull(String value) {
+        if (value == null) {
+            return null;
+        }
         try {
-            return Integer.parseInt(value);
+            return Integer.parseInt(value.trim());
         } catch (NumberFormatException e) {
             return null;
         }
@@ -2005,13 +2075,12 @@ public class StudentViewController extends HttpServlet {
 **Τι προσέχουμε:**
 
 - Η **`findStudent`** περιέχει τα βήματα 1 και 2 της `doGet` του 15.3: διαβάζει τον ΑΜ από το **path**
-  (`getPathInfo()` + `substring`) και βρίσκει τον φοιτητή. Τώρα τα χρειαζόμαστε και στο GET και στο POST, οπότε τα
+  (`getPathInfo()` + `substring` + `parseIntOrNull`) και βρίσκει τον φοιτητή. Τώρα τα χρειαζόμαστε και στο GET και στο POST, οπότε τα
   βγάζουμε σε δική τους μέθοδο για να μην τα γράψουμε δύο φορές. Στη `doGet` και στη `doPost`, η γραμμή
   `Student student = findStudent(request);` κάνει ακριβώς ό,τι έκαναν εκείνες οι γραμμές. Η φόρμα του βαθμού στέλνεται στο `/students/21390001`, οπότε το URL λέει ήδη σε ποιον φοιτητή ανήκει ο
   βαθμός και **δεν χρειάζεται κρυφό πεδίο**.
-- Ο βαθμός είναι αριθμός, οπότε εδώ χρειαζόμαστε μετατροπή: η **`parseIntOrNull`** καλεί την `Integer.parseInt` και,
-  αν ο χρήστης γράψει `abc` (ή τίποτα), πιάνει την `NumberFormatException` και επιστρέφει `null`. Τότε η `validate()`
-  της `Grade` βγάζει το αντίστοιχο λάθος.
+- Η **`parseIntOrNull`** χρησιμοποιείται τώρα και για τον **βαθμό**: αν ο χρήστης γράψει `abc` (ή τίποτα),
+  παίρνουμε `null` και η `validate()` της `Grade` βγάζει το αντίστοιχο λάθος.
 - Το **`showPage`** χρησιμοποιείται και από το GET και από το POST με λάθη, ώστε η σελίδα να έχει πάντα τα ίδια δεδομένα.
 - Μετά την επιτυχημένη αποθήκευση, το redirect πάει στο **ίδιο** `/students/21390001`, αυτή τη φορά με GET.
 
@@ -2127,7 +2196,7 @@ public class StudentViewController extends HttpServlet {
 | `The absolute uri: [jakarta.tags.core] cannot be resolved` | Λείπουν οι dependencies της JSTL από το `pom.xml` (βήμα 3). |
 | Τα ελληνικά εμφανίζονται ως `???` ή `ÎÎ±...` | Λείπει η πρώτη γραμμή `<%@ page contentType=... charset=UTF-8 ... %>` στη JSP, ή το `<request-character-encoding>` στο `web.xml`. |
 | `PropertyNotFoundException: Property [name] not found on type [...Student]` | Λείπει ο getter (`getName()`) στην `Student`, ή έχει άλλο όνομα. Το ίδιο ισχύει για τον ΑΜ στο βήμα 15 (`getAm()`). |
-| (Βήμα 15) Η σελίδα `/students/21390001` δίνει 404, ενώ ο φοιτητής υπάρχει στη λίστα | Στο `StudentRepository` οι ΑΜ συγκρίνονται με `==` αντί για `equals`. |
+| (Βήμα 15) `incompatible types: String cannot be converted to int` στο `new Student(...)` | Ο ΑΜ έρχεται από τη φόρμα ως `String`. Μετατρέψτε τον με την `parseIntOrNull` (15.2). |
 | (Βήμα 15) Το `/students/new` ή το `/students/edit` δίνει 404 «Δεν βρέθηκε ο φοιτητής.» | Το request έφτασε στον `StudentViewController` (`/students/*`), γιατί ο αντίστοιχος controller δεν έχει ακριβώς αυτό το URL στο `@WebServlet(...)`. |
 | Ο Tomcat δεν ξεκινά: `Address already in use` | Τρέχει ήδη άλλος server στη θύρα 8080. Σταματήστε τον ή αλλάξτε θύρα (δείτε [Servers.md, 3.9](Servers.md#39-αλλαγή-θύρας)). |
 
@@ -2145,7 +2214,7 @@ public class StudentViewController extends HttpServlet {
 3. Φτιάξτε έναν τρίτο controller, `/students/search?surname=...`, που εμφανίζει μόνο τους φοιτητές με το επώνυμο που δόθηκε.
    Ξαναχρησιμοποιήστε τη `student-list.jsp`.
 4. (Μετά το βήμα 16) Προσθέστε στη λίστα φοιτητών μια στήλη «Βαθμοί» με το πλήθος των βαθμών κάθε φοιτητή.
-   Υπόδειξη: ο controller μπορεί να φτιάξει ένα `Map<String, Integer>` (ΑΜ φοιτητή → πλήθος) και η JSP να γράψει
+   Υπόδειξη: ο controller μπορεί να φτιάξει ένα `Map<Integer, Integer>` (ΑΜ φοιτητή → πλήθος) και η JSP να γράψει
    `${gradeCounts[student.am]}`.
 5. (Μετά το βήμα 16) Μια δεύτερη σχέση 1 προς πολλά: **Department → Student**. Κάθε φοιτητής ανήκει σε ένα τμήμα.
    - Φτιάξτε τη `Department` (`id`, `name`). Εδώ το τμήμα δεν έχει φυσικό κλειδί σαν τον ΑΜ, οπότε χρησιμοποιήστε
@@ -2158,5 +2227,5 @@ public class StudentViewController extends HttpServlet {
    - Προαιρετικά, φτιάξτε μια σελίδα `/departments/2` (path variable, όπως η σελίδα του φοιτητή) με τους φοιτητές
      του τμήματος.
 6. (Μετά τα βήματα 15 και 16) Όταν διαγράφεται ένας φοιτητής, οι βαθμοί του μένουν στο `GradeRepository` χωρίς
-   φοιτητή («ορφανά» δεδομένα). Προσθέστε στο `GradeRepository` μια μέθοδο `deleteByStudentAm(String studentAm)` και
+   φοιτητή («ορφανά» δεδομένα). Προσθέστε στο `GradeRepository` μια μέθοδο `deleteByStudentAm(int studentAm)` και
    καλέστε τη από τον `StudentDeleteController`. Σε μια βάση δεδομένων το ίδιο γίνεται με `ON DELETE CASCADE`.
