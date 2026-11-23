@@ -54,3 +54,6 @@ Thumbs.db
 desktop.ini
 *~
 *.swp
+
+# ---- Έτοιμο project του lab (μέχρι το βήμα 14): στο git μπαίνει μόνο το studentlab.zip ----
+studentlab/
