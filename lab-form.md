@@ -1344,24 +1344,20 @@ public class StudentViewController extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
 
-        Student student = findStudent(request);
+        // 1. Το path variable: για το /students/21390001 η getPathInfo() δίνει "/21390001"
+        String pathInfo = request.getPathInfo();
+        String am = (pathInfo == null) ? "" : pathInfo.substring(1);   // πετάμε το αρχικό "/" → "21390001"
+
+        // 2. Βρίσκουμε τον φοιτητή με αυτόν τον ΑΜ
+        Student student = StudentRepository.findByAm(am);
         if (student == null) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "Δεν βρέθηκε ο φοιτητής.");
             return;
         }
+
+        // 3. Τον δίνουμε στη JSP
         request.setAttribute("student", student);
         request.getRequestDispatcher("/WEB-INF/views/student-view.jsp").forward(request, response);
-    }
-
-    // Διαβάζει τον ΑΜ από τη διαδρομή του URL και βρίσκει τον φοιτητή
-    //   /students/21390001 → getPathInfo() = "/21390001" → ΑΜ "21390001"
-    private Student findStudent(HttpServletRequest request) {
-        String pathInfo = request.getPathInfo();
-        if (pathInfo == null) {
-            return null;
-        }
-        String am = pathInfo.substring(1);   // πετάμε το αρχικό "/"
-        return StudentRepository.findByAm(am);
     }
 }
 ```
@@ -1378,6 +1374,8 @@ public class StudentViewController extends HttpServlet {
 
 - Το `getPathInfo()` επιστρέφει **`String`** που ξεκινά με `/`. Γι' αυτό το `substring(1)` πετάει τον πρώτο χαρακτήρα
   και μένει ο ΑΜ. Ο ΑΜ είναι ήδη `String`, οπότε δεν χρειάζεται καμία μετατροπή.
+- Αν το URL είναι σκέτο `/students/`, δεν περισσεύει τίποτα μετά το `/students` και το `getPathInfo()` μπορεί να
+  επιστρέψει `null`. Τότε βάζουμε `""` στο `am`, ώστε η `findByAm` απλώς να μη βρει κανέναν.
 - Αν το URL είναι `/students/abc`, `/students/` ή `/students/21390001/x`, ο «ΑΜ» που βγαίνει (`abc`, `""`,
   `21390001/x`) δεν ανήκει σε κανέναν φοιτητή, η `findByAm` επιστρέφει `null` και απαντάμε με **404**
   (`response.sendError`).
@@ -1960,13 +1958,11 @@ public class StudentViewController extends HttpServlet {
         request.getRequestDispatcher("/WEB-INF/views/student-view.jsp").forward(request, response);
     }
 
-    // Διαβάζει τον ΑΜ από τη διαδρομή του URL (/students/21390001 → "/21390001" → "21390001")
+    // Τα βήματα 1 και 2 της doGet του 15.3: ΑΜ από το path → φοιτητής (ή null)
     private Student findStudent(HttpServletRequest request) {
         String pathInfo = request.getPathInfo();
-        if (pathInfo == null) {
-            return null;
-        }
-        return StudentRepository.findByAm(pathInfo.substring(1));
+        String am = (pathInfo == null) ? "" : pathInfo.substring(1);   // "/21390001" → "21390001"
+        return StudentRepository.findByAm(am);
     }
 
     private Double average(List<Grade> grades) {
@@ -1997,8 +1993,10 @@ public class StudentViewController extends HttpServlet {
 
 **Τι προσέχουμε:**
 
-- Το `findStudent` είναι ίδιο με το βήμα 15.3: ο ΑΜ έρχεται από το **path** (`getPathInfo()`), και στο GET και στο
-  POST. Η φόρμα του βαθμού στέλνεται στο `/students/21390001`, οπότε το URL λέει ήδη σε ποιον φοιτητή ανήκει ο
+- Η **`findStudent`** περιέχει τα βήματα 1 και 2 της `doGet` του 15.3: διαβάζει τον ΑΜ από το **path**
+  (`getPathInfo()` + `substring`) και βρίσκει τον φοιτητή. Τώρα τα χρειαζόμαστε και στο GET και στο POST, οπότε τα
+  βγάζουμε σε δική τους μέθοδο για να μην τα γράψουμε δύο φορές. Στη `doGet` και στη `doPost`, η γραμμή
+  `Student student = findStudent(request);` κάνει ακριβώς ό,τι έκαναν εκείνες οι γραμμές. Η φόρμα του βαθμού στέλνεται στο `/students/21390001`, οπότε το URL λέει ήδη σε ποιον φοιτητή ανήκει ο
   βαθμός και **δεν χρειάζεται κρυφό πεδίο**.
 - Ο βαθμός είναι αριθμός, οπότε εδώ χρειαζόμαστε μετατροπή: η **`parseIntOrNull`** καλεί την `Integer.parseInt` και,
   αν ο χρήστης γράψει `abc` (ή τίποτα), πιάνει την `NumberFormatException` και επιστρέφει `null`. Τότε η `validate()`
