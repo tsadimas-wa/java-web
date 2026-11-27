@@ -31,6 +31,7 @@
 - [14. Επέκταση: validation στην κλάση Student](#14-επέκταση-validation-στην-κλάση-student)
 - [15. Επέκταση: προβολή, επεξεργασία και διαγραφή φοιτητή](#15-επέκταση-προβολή-επεξεργασία-και-διαγραφή-φοιτητή)
 - [16. Επέκταση: σχέση 1 προς πολλά (Student → Grade)](#16-επέκταση-σχέση-1-προς-πολλά-student--grade)
+- [17. Επέκταση: σχέση πολλά προς πολλά (Student ↔ Course)](#17-επέκταση-σχέση-πολλά-προς-πολλά-student--course)
 - [Συχνά προβλήματα](#συχνά-προβλήματα)
 - [Ασκήσεις](#ασκήσεις)
 
@@ -2246,6 +2247,550 @@ public class StudentViewController extends HttpServlet {
 
 ---
 
+## 17. Επέκταση: σχέση πολλά προς πολλά (Student ↔ Course)
+
+> Το βήμα αυτό προϋποθέτει το βήμα 16: η σελίδα του φοιτητή (`/students/21390001`) δείχνει ήδη βαθμούς, μέσο όρο
+> και μια φόρμα με POST στο ίδιο URL.
+
+Στο βήμα 16 το μάθημα ήταν **ελεύθερο κείμενο** μέσα στη `Grade`. Αυτό έχει δύο προβλήματα:
+
+- Τα «Προγραμματισμός Διαδικτύου», «Προγρ. Διαδικτύου» και «προγραμματισμός διαδικτύου» μετράνε ως **τρία
+  διαφορετικά** μαθήματα.
+- Δεν μπορούμε να ρωτήσουμε «ποιοι φοιτητές παρακολουθούν αυτό το μάθημα;», γιατί το μάθημα δεν υπάρχει ως κάτι
+  ξεχωριστό. Υπάρχει μόνο ως κείμενο σε κάθε βαθμό.
+
+Εδώ το μάθημα γίνεται **οντότητα** (`Course`) με δικό της κλειδί. Ένας φοιτητής **γράφεται** σε πολλά μαθήματα, και
+ένα μάθημα έχει πολλούς φοιτητές: αυτή είναι μια σχέση **πολλά προς πολλά** (many‑to‑many).
+
+Μια σχέση πολλά προς πολλά δεν μπαίνει σε ένα πεδίο: ούτε ο φοιτητής μπορεί να έχει ένα πεδίο `courseId` (είναι
+πολλά), ούτε το μάθημα ένα πεδίο `studentAm`. Τη χωρίζουμε σε **δύο σχέσεις 1 προς πολλά** με μια **ενδιάμεση
+οντότητα**, την εγγραφή (`Enrollment`). Κάθε εγγραφή λέει «ο φοιτητής Χ είναι γραμμένος στο μάθημα Υ» και κρατά
+και τον **βαθμό**, που μπαίνει αργότερα:
+
+```
+Student (1) ───────< Enrollment (N) >─────── (1) Course
+  am                   studentAm  ┐ κλειδί         id
+  name                 courseId   ┘ (το ζεύγος)    title
+  surname              grade      ← null μέχρι να μπει βαθμός
+  email
+```
+
+Κάθε φοιτητής έχει πολλές εγγραφές (όπως είχε πολλούς βαθμούς στο βήμα 16), και κάθε μάθημα έχει κι αυτό πολλές
+εγγραφές. Η `Enrollment` **αντικαθιστά τη `Grade`**: είναι ο ίδιος βαθμός, αλλά δείχνει σε ένα μάθημα αντί να το
+γράφει ως κείμενο, και μπορεί να υπάρχει και χωρίς βαθμό.
+
+Η σελίδα του φοιτητή έχει πλέον **δύο φόρμες** που στέλνουν και οι δύο POST στο ίδιο URL:
+
+| URL                             | Μέθοδος | Controller              | Τι κάνει                                                       |
+|---------------------------------|---------|-------------------------|----------------------------------------------------------------|
+| `/studentlab/students/21390001` | GET     | `StudentViewController` | στοιχεία φοιτητή, οι εγγραφές του με τους βαθμούς, μέσος όρος  |
+| `/studentlab/students/21390001` | POST    | `StudentViewController` | `action=enroll`: εγγραφή σε μάθημα                             |
+| `/studentlab/students/21390001` | POST    | `StudentViewController` | `action=grade`: βαθμός σε ένα μάθημα που είναι ήδη γραμμένος   |
+
+Νέα, αλλαγμένα και διαγραμμένα αρχεία:
+
+```
+src/main/
+├── java/gr/uniwa/ice/studentlab/
+│   ├── model/
+│   │   ├── Course.java                     ΝΕΟ
+│   │   ├── Enrollment.java                 ΝΕΟ
+│   │   └── Grade.java                      ΔΙΑΓΡΑΦΗ (τη θέση της παίρνει η Enrollment)
+│   ├── repository/
+│   │   ├── CourseRepository.java           ΝΕΟ   (έτοιμα μαθήματα)
+│   │   ├── EnrollmentRepository.java       ΝΕΟ
+│   │   └── GradeRepository.java            ΔΙΑΓΡΑΦΗ
+│   └── controller/
+│       └── StudentViewController.java      εγγραφή και βαθμός αντί για «νέος βαθμός»
+└── webapp/WEB-INF/views/
+    └── student-view.jsp                    πίνακας εγγραφών, φόρμα εγγραφής, φόρμα βαθμού ανά μάθημα
+```
+
+### 17.1 Η οντότητα Course και το CourseRepository
+
+Στο package `gr.uniwa.ice.studentlab.model`, νέα κλάση `Course`:
+
+**Αρχείο:** `src/main/java/gr/uniwa/ice/studentlab/model/Course.java`
+
+```java
+package gr.uniwa.ice.studentlab.model;
+
+public class Course {
+
+    private int id;          // το κλειδί του μαθήματος
+    private String title;
+
+    public Course(int id, String title) {
+        this.id = id;
+        this.title = title;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+}
+```
+
+Το μάθημα δεν έχει «φυσικό» κλειδί σαν τον ΑΜ, οπότε του δίνουμε έναν αριθμό **`id`**. Είναι το **τεχνητό
+κλειδί** (surrogate key) του [βήματος 15.1](#151-ο-αμ-ως-μοναδικό-κλειδί).
+
+Στο package `gr.uniwa.ice.studentlab.repository`, νέα κλάση `CourseRepository`. Δεν φτιάχνουμε φόρμα για νέα
+μαθήματα: τα μαθήματα υπάρχουν έτοιμα από την αρχή.
+
+**Αρχείο:** `src/main/java/gr/uniwa/ice/studentlab/repository/CourseRepository.java`
+
+```java
+package gr.uniwa.ice.studentlab.repository;
+
+import gr.uniwa.ice.studentlab.model.Course;
+import java.util.ArrayList;
+import java.util.List;
+
+public class CourseRepository {
+
+    private static final List<Course> courses = new ArrayList<>();
+
+    // Τρέχει μία φορά, όταν φορτώνεται η κλάση: τα μαθήματα υπάρχουν από την αρχή
+    static {
+        courses.add(new Course(1, "Προγραμματισμός Διαδικτύου"));
+        courses.add(new Course(2, "Βάσεις Δεδομένων"));
+        courses.add(new Course(3, "Αντικειμενοστρεφής Προγραμματισμός"));
+        courses.add(new Course(4, "Δίκτυα Υπολογιστών"));
+    }
+
+    public static synchronized List<Course> findAll() {
+        return new ArrayList<>(courses);
+    }
+
+    // Επιστρέφει το μάθημα με αυτό το id, ή null αν δεν υπάρχει
+    public static synchronized Course findById(int id) {
+        for (Course course : courses) {
+            if (course.getId() == id) {
+                return course;
+            }
+        }
+        return null;
+    }
+}
+```
+
+- Το **`static { ... }`** είναι ένα **static block**. Η Java το εκτελεί **μία φορά**, την πρώτη φορά που
+  χρησιμοποιείται η κλάση, πριν από οποιαδήποτε μέθοδό της. Εδώ γεμίζει τη λίστα με τα μαθήματα.
+- Σε μια βάση δεδομένων, τα έτοιμα μαθήματα θα ήταν γραμμές που μπαίνουν με ένα script (`INSERT INTO course ...`)
+  όταν στήνεται η βάση.
+
+### 17.2 Η οντότητα Enrollment
+
+Στο package `gr.uniwa.ice.studentlab.model`, νέα κλάση `Enrollment`. Σβήστε τη `Grade` (δεξί κλικ → **Delete**).
+
+**Αρχείο:** `src/main/java/gr/uniwa/ice/studentlab/model/Enrollment.java`
+
+```java
+package gr.uniwa.ice.studentlab.model;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+public class Enrollment {
+
+    private int studentAm;   // ποιος φοιτητής   ┐ μαζί είναι το κλειδί:
+    private int courseId;    // σε ποιο μάθημα   ┘ ένας φοιτητής γράφεται μία φορά σε κάθε μάθημα
+    private Integer grade;   // null: γραμμένος, αλλά χωρίς βαθμό ακόμα
+
+    public Enrollment(int studentAm, int courseId, Integer grade) {
+        this.studentAm = studentAm;
+        this.courseId = courseId;
+        this.grade = grade;
+    }
+
+    public int getStudentAm() {
+        return studentAm;
+    }
+
+    public int getCourseId() {
+        return courseId;
+    }
+
+    public Integer getGrade() {
+        return grade;
+    }
+
+    public Map<String, String> validate() {
+        Map<String, String> errors = new LinkedHashMap<>();
+
+        // Ο βαθμός μπορεί να λείπει (null). Αν όμως υπάρχει, πρέπει να είναι 0–10.
+        if (grade != null && (grade < 0 || grade > 10)) {
+            errors.put("grade", "Ο βαθμός πρέπει να είναι από 0 έως 10.");
+        }
+
+        return errors;
+    }
+}
+```
+
+- Η `Enrollment` έχει **δύο foreign keys**: το `studentAm` δείχνει σε φοιτητή (όπως στη `Grade`) και το `courseId`
+  σε μάθημα. Στη βάση θα ήταν ένας πίνακας `enrollment` με στήλες `student_am`, `course_id` και `grade`.
+- Δεν έχει δικό της `id`. Την ξεχωρίζει το **ζεύγος** (`studentAm`, `courseId`): δεν γίνεται ο ίδιος φοιτητής να
+  είναι γραμμένος δύο φορές στο ίδιο μάθημα. Ένα κλειδί από δύο στήλες λέγεται **σύνθετο κλειδί** (composite key).
+- Ο **`grade`** είναι `Integer`, όπως στη `Grade`. Εδώ όμως το `null` είναι **έγκυρη** τιμή: σημαίνει «γράφτηκε,
+  αλλά δεν έχει βαθμολογηθεί». Γι' αυτό η `validate()` ελέγχει το εύρος **μόνο** όταν υπάρχει βαθμός.
+
+### 17.3 Το EnrollmentRepository
+
+Στο package `gr.uniwa.ice.studentlab.repository`, νέα κλάση `EnrollmentRepository`. Σβήστε το `GradeRepository`.
+
+**Αρχείο:** `src/main/java/gr/uniwa/ice/studentlab/repository/EnrollmentRepository.java`
+
+```java
+package gr.uniwa.ice.studentlab.repository;
+
+import gr.uniwa.ice.studentlab.model.Enrollment;
+import java.util.ArrayList;
+import java.util.List;
+
+public class EnrollmentRepository {
+
+    private static final List<Enrollment> enrollments = new ArrayList<>();
+
+    public static synchronized void save(Enrollment enrollment) {
+        enrollments.add(enrollment);
+    }
+
+    // Η εγγραφή με αυτό το κλειδί (φοιτητής + μάθημα), ή null αν δεν υπάρχει
+    public static synchronized Enrollment find(int studentAm, int courseId) {
+        for (Enrollment enrollment : enrollments) {
+            if (enrollment.getStudentAm() == studentAm && enrollment.getCourseId() == courseId) {
+                return enrollment;
+            }
+        }
+        return null;
+    }
+
+    // Όλες οι εγγραφές ενός φοιτητή
+    public static synchronized List<Enrollment> findByStudentAm(int studentAm) {
+        List<Enrollment> result = new ArrayList<>();
+        for (Enrollment enrollment : enrollments) {
+            if (enrollment.getStudentAm() == studentAm) {
+                result.add(enrollment);
+            }
+        }
+        return result;
+    }
+
+    // Αντικαθιστά την εγγραφή με το ίδιο κλειδί. Επιστρέφει false αν δεν βρέθηκε.
+    public static synchronized boolean update(Enrollment enrollment) {
+        for (int i = 0; i < enrollments.size(); i++) {
+            Enrollment current = enrollments.get(i);
+            if (current.getStudentAm() == enrollment.getStudentAm()
+                    && current.getCourseId() == enrollment.getCourseId()) {
+                enrollments.set(i, enrollment);
+                return true;
+            }
+        }
+        return false;
+    }
+}
+```
+
+- Η **`find`** ψάχνει με **δύο** συνθήκες, γιατί το κλειδί είναι το ζεύγος. Σε SQL:
+  `SELECT * FROM enrollment WHERE student_am = ? AND course_id = ?`.
+- Η **`findByStudentAm`** είναι η `findByStudentAm` του `GradeRepository`, για εγγραφές.
+- Η **`update`** δουλεύει όπως η `update` του `StudentRepository` (15.1). Η `Enrollment` δεν έχει setters, οπότε ο
+  βαθμός **δεν** αλλάζει πάνω στο αποθηκευμένο αντικείμενο: φτιάχνουμε νέα `Enrollment` με τον βαθμό και την
+  περνάμε στην `update`, ακριβώς όπως κάναμε με την επεξεργασία φοιτητή.
+
+### 17.4 Ο controller της σελίδας του φοιτητή
+
+Η σελίδα έχει τώρα **δύο** φόρμες με POST στο ίδιο URL: «εγγραφή σε μάθημα» και «βαθμός». Για να ξέρει η `doPost`
+ποια πατήθηκε, κάθε φόρμα στέλνει ένα κρυφό πεδίο **`action`** με τιμή `enroll` ή `grade`. Αντικαταστήστε τον
+`StudentViewController` με:
+
+**Αρχείο:** `src/main/java/gr/uniwa/ice/studentlab/controller/StudentViewController.java`
+
+```java
+package gr.uniwa.ice.studentlab.controller;
+
+import gr.uniwa.ice.studentlab.model.Course;
+import gr.uniwa.ice.studentlab.model.Enrollment;
+import gr.uniwa.ice.studentlab.model.Student;
+import gr.uniwa.ice.studentlab.repository.CourseRepository;
+import gr.uniwa.ice.studentlab.repository.EnrollmentRepository;
+import gr.uniwa.ice.studentlab.repository.StudentRepository;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+@WebServlet("/students/*")
+public class StudentViewController extends HttpServlet {
+
+    // GET /students/21390001 → η σελίδα του φοιτητή
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        Student student = findStudent(request);
+        if (student == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Δεν βρέθηκε ο φοιτητής.");
+            return;
+        }
+        showPage(request, response, student);
+    }
+
+    // POST /students/21390001 → εγγραφή σε μάθημα (action=enroll) ή βαθμός (action=grade)
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+
+        Student student = findStudent(request);
+        if (student == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Δεν βρέθηκε ο φοιτητής.");
+            return;
+        }
+
+        // 1. Ποια φόρμα πατήθηκε; Και οι δύο στέλνουν το μάθημα (courseId).
+        String action = request.getParameter("action");
+        Integer courseId = parseIntOrNull(request.getParameter("courseId"));
+
+        Map<String, String> errors;
+        if ("enroll".equals(action)) {
+            errors = enroll(student, courseId);
+        } else if ("grade".equals(action)) {
+            errors = grade(student, courseId, parseIntOrNull(request.getParameter("grade")));
+        } else {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Άγνωστη ενέργεια.");
+            return;
+        }
+
+        // 2. Με λάθη ξαναδείχνουμε τη σελίδα, αλλιώς redirect (Post/Redirect/Get)
+        if (!errors.isEmpty()) {
+            request.setAttribute("errors", errors);
+            showPage(request, response, student);
+            return;
+        }
+        response.sendRedirect(request.getContextPath() + "/students/" + student.getAm());
+    }
+
+    // Εγγραφή σε μάθημα, χωρίς βαθμό. Επιστρέφει τα λάθη (άδειο Map αν αποθηκεύτηκε).
+    private Map<String, String> enroll(Student student, Integer courseId) {
+        Map<String, String> errors = new LinkedHashMap<>();
+
+        if (courseId == null || CourseRepository.findById(courseId) == null) {
+            errors.put("course", "Διαλέξτε ένα μάθημα από τη λίστα.");
+        } else if (EnrollmentRepository.find(student.getAm(), courseId) != null) {
+            errors.put("course", "Ο φοιτητής είναι ήδη γραμμένος σε αυτό το μάθημα.");
+        } else {
+            EnrollmentRepository.save(new Enrollment(student.getAm(), courseId, null));
+        }
+        return errors;
+    }
+
+    // Βαθμός σε μάθημα που ο φοιτητής είναι ήδη γραμμένος. Επιστρέφει τα λάθη.
+    private Map<String, String> grade(Student student, Integer courseId, Integer grade) {
+        Map<String, String> errors = new LinkedHashMap<>();
+
+        if (courseId == null || EnrollmentRepository.find(student.getAm(), courseId) == null) {
+            errors.put("grade", "Ο φοιτητής δεν είναι γραμμένος σε αυτό το μάθημα.");
+        } else if (grade == null) {
+            errors.put("grade", "Ο βαθμός πρέπει να είναι ακέραιος αριθμός.");
+        } else {
+            // Νέα εγγραφή με τον βαθμό: η αποθηκευμένη δεν αλλάζει, όπως στην επεξεργασία φοιτητή (15.6)
+            Enrollment enrollment = new Enrollment(student.getAm(), courseId, grade);
+            errors.putAll(enrollment.validate());
+            if (errors.isEmpty()) {
+                EnrollmentRepository.update(enrollment);
+            }
+        }
+        return errors;
+    }
+
+    // Βάζει στο request ό,τι χρειάζεται η JSP και κάνει forward
+    private void showPage(HttpServletRequest request, HttpServletResponse response, Student student)
+            throws ServletException, IOException {
+
+        List<Enrollment> enrollments = EnrollmentRepository.findByStudentAm(student.getAm());
+
+        // Όλα τα μαθήματα, με κλειδί το id: η JSP βρίσκει το όνομα κάθε μαθήματος από το courseId
+        Map<Integer, Course> courses = new LinkedHashMap<>();
+        for (Course course : CourseRepository.findAll()) {
+            courses.put(course.getId(), course);
+        }
+
+        request.setAttribute("student", student);
+        request.setAttribute("enrollments", enrollments);
+        request.setAttribute("courses", courses);
+        request.setAttribute("average", average(enrollments));
+        request.getRequestDispatcher("/WEB-INF/views/student-view.jsp").forward(request, response);
+    }
+
+    // ΑΜ από το path → φοιτητής (ή null), όπως στο βήμα 16
+    private Student findStudent(HttpServletRequest request) {
+        String pathInfo = request.getPathInfo();
+        String amText = (pathInfo == null) ? null : pathInfo.substring(1);   // "/21390001" → "21390001"
+        Integer am = parseIntOrNull(amText);                                  // "21390001" → 21390001
+        return (am == null) ? null : StudentRepository.findByAm(am);
+    }
+
+    // Μέσος όρος μόνο των μαθημάτων που έχουν βαθμό. null αν δεν έχει κανέναν βαθμό.
+    private Double average(List<Enrollment> enrollments) {
+        int sum = 0;
+        int count = 0;
+        for (Enrollment enrollment : enrollments) {
+            if (enrollment.getGrade() != null) {
+                sum += enrollment.getGrade();
+                count++;
+            }
+        }
+        return (count == 0) ? null : (double) sum / count;
+    }
+
+    // "21390001" → 21390001, ενώ null, "", "abc" → null
+    private Integer parseIntOrNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+}
+```
+
+**Τι προσέχουμε:**
+
+- Το **`action`** είναι απλώς ένα ακόμη parameter. Το `"enroll".equals(action)` γράφεται με τη σταθερά πρώτη, ώστε
+  να μη σκάσει με `NullPointerException` αν το `action` λείπει (`null`). Αν η τιμή είναι άγνωστη, απαντάμε με
+  **400 Bad Request**: ο browser έστειλε κάτι που δεν βγάζει νόημα.
+- Οι **`enroll`** και **`grade`** επιστρέφουν τα λάθη και αποθηκεύουν **μόνο** αν δεν υπάρχει κανένα. Έτσι το
+  κομμάτι «λάθη → ξανά η σελίδα, αλλιώς redirect» γράφεται μία φορά στη `doPost`.
+- Οι έλεγχοι «υπάρχει το μάθημα;» και «είναι ήδη γραμμένος;» γίνονται στον **controller**, γιατί χρειάζονται
+  repositories. Είναι ο ίδιος λόγος με τον έλεγχο για διπλό ΑΜ στο 15.2.
+- Στη `grade`, ο βαθμός είναι **υποχρεωτικός**: ο χρήστης πάτησε «Αποθήκευση βαθμού», άρα ένα κενό πεδίο είναι
+  λάθος. Αυτό τον κανόνα δεν μπορεί να τον έχει η `validate()`, γιατί στην εγγραφή ο βαθμός λείπει **νόμιμα**. Ο ίδιος
+  κανόνας δεν ισχύει παντού, οπότε τον βάζουμε εκεί όπου ισχύει. Τον έλεγχο του εύρους (0–10) τον κάνει η
+  `validate()`, και το **`errors.putAll(...)`** προσθέτει τα λάθη της στο Map μας.
+- **Το «join» στη μνήμη.** Η `Enrollment` ξέρει μόνο το `courseId`, ενώ η σελίδα θέλει να δείξει το **όνομα** του
+  μαθήματος. Η `showPage` φτιάχνει ένα **`Map<Integer, Course>`** (id → μάθημα), και η JSP βρίσκει το μάθημα κάθε
+  εγγραφής με `${courses[e.courseId]}`. Σε SQL αυτό θα ήταν ένα `JOIN`:
+  `SELECT c.title, e.grade FROM enrollment e JOIN course c ON c.id = e.course_id WHERE e.student_am = ?`.
+- Το Map είναι **`LinkedHashMap`**, ώστε η λίστα των μαθημάτων στη φόρμα να βγαίνει με τη σειρά του repository
+  (δείτε το 14.1).
+- Ο **μέσος όρος** μετρά μόνο τις εγγραφές με βαθμό. Αν μετρούσαμε και τις υπόλοιπες, η `sum += enrollment.getGrade()`
+  θα έσκαγε με `NullPointerException`, γιατί ένα `Integer` που είναι `null` δεν γίνεται `int`.
+
+### 17.5 Η JSP της σελίδας του φοιτητή
+
+Στη `student-view.jsp`, αντικαταστήστε όλο το κομμάτι από το `<h2>Βαθμοί</h2>` μέχρι και τη φόρμα του νέου βαθμού
+(πριν από το link «Λίστα φοιτητών») με:
+
+**Αρχείο:** `src/main/webapp/WEB-INF/views/student-view.jsp`
+
+```jsp
+    <h2>Μαθήματα</h2>
+    <c:choose>
+        <c:when test="${empty enrollments}">
+            <p>Δεν είναι γραμμένος σε κανένα μάθημα ακόμα.</p>
+        </c:when>
+        <c:otherwise>
+            <table border="1">
+                <tr>
+                    <th>Μάθημα</th>
+                    <th>Βαθμός</th>
+                </tr>
+                <c:forEach var="e" items="${enrollments}">
+                    <tr>
+                        <td><c:out value="${courses[e.courseId].title}"/></td>
+                        <td>
+                            <form method="post" action="${pageContext.request.contextPath}/students/${student.am}"
+                                  style="display: inline">
+                                <input type="hidden" name="action" value="grade">
+                                <input type="hidden" name="courseId" value="${e.courseId}">
+                                <input type="number" name="grade" min="0" max="10" placeholder="—"
+                                       value="<c:out value='${e.grade}'/>">
+                                <button type="submit">Αποθήκευση βαθμού</button>
+                            </form>
+                            <c:if test="${param.action == 'grade' and param.courseId == e.courseId}">
+                                <strong><c:out value="${errors.grade}"/></strong>
+                            </c:if>
+                        </td>
+                    </tr>
+                </c:forEach>
+            </table>
+            <c:if test="${not empty average}">
+                <p>Μέσος όρος: <fmt:formatNumber value="${average}" maxFractionDigits="2"/></p>
+            </c:if>
+        </c:otherwise>
+    </c:choose>
+
+    <h2>Εγγραφή σε μάθημα</h2>
+    <form method="post" action="${pageContext.request.contextPath}/students/${student.am}">
+        <input type="hidden" name="action" value="enroll">
+        <label for="courseId">Μάθημα:</label>
+        <select id="courseId" name="courseId">
+            <option value="">-- επιλέξτε --</option>
+            <c:forEach var="entry" items="${courses}">
+                <option value="${entry.key}"><c:out value="${entry.value.title}"/></option>
+            </c:forEach>
+        </select>
+        <button type="submit">Εγγραφή</button>
+        <strong><c:out value="${errors.course}"/></strong>
+    </form>
+```
+
+- **`${courses[e.courseId].title}`**: οι αγκύλες σε Map σημαίνουν `courses.get(...)`. Για μια εγγραφή με
+  `courseId` 2 γίνεται `courses.get(2).getTitle()`, δηλαδή «Βάσεις Δεδομένων». Είναι το `${errors.name}` του 14.3,
+  μόνο που το κλειδί δεν είναι σταθερό αλλά βγαίνει από την εγγραφή.
+- **Μια φόρμα ανά γραμμή.** Κάθε γραμμή του πίνακα έχει δική της φόρμα, με κρυφά πεδία `action=grade` και το
+  `courseId` της γραμμής. Έτσι ο controller ξέρει σε **ποιο** μάθημα μπαίνει ο βαθμός. Αν το μάθημα δεν έχει βαθμό, το
+  `${e.grade}` είναι `null`, το πεδίο μένει κενό και φαίνεται το `placeholder` (`—`).
+- **Το λάθος στη σωστή γραμμή.** Τα λάθη του βαθμού έχουν πάντα το κλειδί `grade`, για όποιο μάθημα κι αν είναι. Το
+  `<c:if>` δείχνει το μήνυμα μόνο στη γραμμή της οποίας το `courseId` είναι αυτό που μόλις στάλθηκε
+  (`${param.courseId}`). Το `param.courseId` είναι κείμενο και το `e.courseId` αριθμός, αλλά το `==` της EL τα
+  μετατρέπει και συγκρίνει τις τιμές.
+- **Το `<select>`.** Το `<c:forEach>` πάνω σε ένα **Map** δίνει σε κάθε επανάληψη ένα ζευγάρι: `entry.key` είναι το
+  id και `entry.value` το μάθημα. Η φόρμα στέλνει την τιμή (`value`) του επιλεγμένου `<option>`, δηλαδή το id, όχι το
+  όνομα. Η πρώτη επιλογή έχει κενή τιμή, οπότε αν ο χρήστης δεν διαλέξει τίποτα, το `courseId` φτάνει ως `""` και η
+  `parseIntOrNull` δίνει `null`.
+- Το `<fmt:formatNumber>` και το taglib `fmt` στην αρχή του αρχείου μένουν όπως στο βήμα 16. Ο μέσος όρος
+  εμφανίζεται μόνο αν υπάρχει τουλάχιστον ένας βαθμός.
+
+### 17.6 Δοκιμή
+
+Πατήστε **Run** (τα δεδομένα της μνήμης χάνονται, οπότε προσθέστε ξανά δύο φοιτητές) και δοκιμάστε:
+
+1. Ανοίξτε τη σελίδα ενός φοιτητή. Γράφει «Δεν είναι γραμμένος σε κανένα μάθημα ακόμα.», και η λίστα της φόρμας
+   έχει τα τέσσερα μαθήματα του `CourseRepository`.
+2. Γράψτε τον στα «Βάσεις Δεδομένων» και «Δίκτυα Υπολογιστών». Εμφανίζονται στον πίνακα με κενό βαθμό, και δεν
+   υπάρχει μέσος όρος.
+3. Γράψτε τον **ξανά** στα «Βάσεις Δεδομένων»: «Ο φοιτητής είναι ήδη γραμμένος σε αυτό το μάθημα.». Πατήστε
+   **Εγγραφή** χωρίς να διαλέξετε μάθημα: «Διαλέξτε ένα μάθημα από τη λίστα.».
+4. Βάλτε `8` στις «Βάσεις Δεδομένων». Ο μέσος όρος είναι `8`: το μάθημα χωρίς βαθμό δεν μετράει.
+   Βάλτε `6` στα «Δίκτυα Υπολογιστών»: ο μέσος όρος γίνεται `7`.
+5. Αλλάξτε τον βαθμό στις «Βάσεις Δεδομένων» σε `10`. Ο βαθμός αντικαθίσταται (δεν μπαίνει δεύτερη γραμμή) και ο
+   μέσος όρος γίνεται `8`.
+6. Προσθέστε προσωρινά `novalidate` στη φόρμα του βαθμού (όπως στο 14.4) και στείλτε `11`, και μετά κενό. Το
+   μήνυμα του server εμφανίζεται **μόνο** στη γραμμή του μαθήματος που αλλάξατε.
+7. Ανοίξτε τη σελίδα του **άλλου** φοιτητή και γράψτε τον κι αυτόν στα «Βάσεις Δεδομένων». Το ίδιο μάθημα έχει τώρα
+   δύο φοιτητές, και ο καθένας έχει τον δικό του βαθμό σε αυτό: αυτό είναι το «πολλά προς πολλά».
+
+> **Στην πράξη:** με JPA (Hibernate), μια σχέση πολλά προς πολλά χωρίς δικά της δεδομένα γράφεται με
+> `@ManyToMany`, και η ενδιάμεση στήλη φτιάχνεται μόνη της. Όταν όμως η σχέση έχει **δικό της δεδομένο**, όπως εδώ ο
+> βαθμός, χρειάζεται ενδιάμεση οντότητα σαν την `Enrollment`, με δύο `@ManyToOne`. Αυτό που φτιάξαμε με το χέρι
+> είναι ακριβώς αυτή η μορφή.
+
+---
+
 ## Συχνά προβλήματα
 
 | Πρόβλημα | Αιτία / Λύση |
@@ -2277,7 +2822,7 @@ public class StudentViewController extends HttpServlet {
    Ξαναχρησιμοποιήστε τη `student-list.jsp`.
 4. (Μετά το βήμα 16) Προσθέστε στη λίστα φοιτητών μια στήλη «Βαθμοί» με το πλήθος των βαθμών κάθε φοιτητή.
    Υπόδειξη: ο controller μπορεί να φτιάξει ένα `Map<Integer, Integer>` (ΑΜ φοιτητή → πλήθος) και η JSP να γράψει
-   `${gradeCounts[student.am]}`.
+   `${gradeCounts[student.am]}`. (Μετά το βήμα 17: πλήθος μαθημάτων από το `EnrollmentRepository`.)
 5. (Μετά το βήμα 16) Μια δεύτερη σχέση 1 προς πολλά: **Department → Student**. Κάθε φοιτητής ανήκει σε ένα τμήμα.
    - Φτιάξτε τη `Department` (`id`, `name`). Εδώ το τμήμα δεν έχει φυσικό κλειδί σαν τον ΑΜ, οπότε χρησιμοποιήστε
      έναν αριθμό `id` (τεχνητό κλειδί). Φτιάξτε και ένα `DepartmentRepository` με 3–4 τμήματα έτοιμα
@@ -2288,6 +2833,20 @@ public class StudentViewController extends HttpServlet {
    - Στη `validate()` ή στον controller, ελέγξτε ότι το τμήμα που στάλθηκε υπάρχει.
    - Προαιρετικά, φτιάξτε μια σελίδα `/departments/2` (path variable, όπως η σελίδα του φοιτητή) με τους φοιτητές
      του τμήματος.
+
+   Αν έχετε κάνει το βήμα 17, το `static` block και το `<select>` που γεμίζει από ένα repository τα έχετε ήδη δει
+   (17.1, 17.5). Η διαφορά εδώ είναι ότι το `<select>` είναι μέσα στη φόρμα του **φοιτητή**, οπότε η επιλογή
+   αποθηκεύεται ως πεδίο της `Student` (1 προς πολλά) και όχι σε ενδιάμεση οντότητα (πολλά προς πολλά).
 6. (Μετά τα βήματα 15 και 16) Όταν διαγράφεται ένας φοιτητής, οι βαθμοί του μένουν στο `GradeRepository` χωρίς
    φοιτητή («ορφανά» δεδομένα). Προσθέστε στο `GradeRepository` μια μέθοδο `deleteByStudentAm(int studentAm)` και
    καλέστε τη από τον `StudentDeleteController`. Σε μια βάση δεδομένων το ίδιο γίνεται με `ON DELETE CASCADE`.
+   (Μετά το βήμα 17, το ίδιο ισχύει για τις εγγραφές του φοιτητή στο `EnrollmentRepository`.)
+7. (Μετά το βήμα 17) Η **άλλη πλευρά** της σχέσης πολλά προς πολλά: μια σελίδα για κάθε μάθημα, π.χ. `/courses/2`,
+   με τους φοιτητές που είναι γραμμένοι σε αυτό και τον βαθμό του καθενός.
+   - Προσθέστε στο `EnrollmentRepository` μια μέθοδο `findByCourseId(int courseId)`, όπως η `findByStudentAm`.
+   - Φτιάξτε έναν `CourseViewController` στο `@WebServlet("/courses/*")`, που διαβάζει το id από το path όπως ο
+     `StudentViewController`, και απαντά με 404 αν το μάθημα δεν υπάρχει.
+   - Η JSP χρειάζεται το ονοματεπώνυμο κάθε φοιτητή, ενώ η `Enrollment` έχει μόνο τον `studentAm`. Κάντε το ίδιο
+     «join» με το 17.4, αυτή τη φορά με ένα `Map<Integer, Student>` (ΑΜ → φοιτητής).
+   - Στη σελίδα του φοιτητή, κάντε το όνομα κάθε μαθήματος link στη σελίδα του μαθήματος, και στη σελίδα του
+     μαθήματος τον ΑΜ κάθε φοιτητή link στη σελίδα του φοιτητή.
