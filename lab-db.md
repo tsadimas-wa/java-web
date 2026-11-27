@@ -180,6 +180,16 @@ sudo systemctl start mysql
 sudo mysql            # σύνδεση ως root (με τον κωδικό του sudo)
 ```
 
+Χωρίς δικαιώματα διαχειριστή, όπως στα Windows: από την ίδια σελίδα κατεβάστε το **Linux - Generic** archive
+(`mysql-8.4.x-linux-glibc2.17-x86_64.tar.xz`), αποσυμπιέστε το και, στον φάκελο `bin`, τρέξτε
+`./mysqld --initialize-insecure --console` (μία φορά) και μετά `./mysqld --console`.
+
+> **`Can't connect to local MySQL server through socket '/run/mysqld/mysqld.sock'`:** στο Linux, το `mysql` χωρίς
+> `-h` δεν συνδέεται μέσω δικτύου αλλά μέσω ενός αρχείου socket. Ο server του archive φτιάχνει το socket στο
+> `/tmp/mysql.sock`, ενώ το `mysql` της διανομής το ψάχνει αλλού. Συνδεθείτε μέσω TCP με
+> **`mysql -u root -h 127.0.0.1`** (ή με `--socket=/tmp/mysql.sock`, ή με το `./mysql` του φακέλου `bin` του archive).
+> Η εφαρμογή δεν επηρεάζεται: η JDBC συνδέεται πάντα μέσω TCP, στο `localhost:3306`.
+
 ### 2.3 Docker
 
 Αν έχετε Docker:
@@ -188,6 +198,37 @@ sudo mysql            # σύνδεση ως root (με τον κωδικό το�
 docker run --name studentlab-mysql -e MYSQL_ROOT_PASSWORD=root -p 3306:3306 -d mysql:8.4
 docker exec -it studentlab-mysql mysql -u root -p     # κωδικός: root
 ```
+
+### 2.4 Σταμάτημα και επανεκκίνηση του server
+
+Ο server σταματά **κανονικά** (αφού γράψει στον δίσκο ό,τι έχει στη μνήμη) με την εντολή SQL `SHUTDOWN`, από μια
+σύνδεση ως `root`:
+
+```bash
+mysql -u root -h 127.0.0.1 -e "SHUTDOWN;"
+```
+
+ή, ισοδύναμα, με το `mysqladmin` (βρίσκεται κι αυτό στον φάκελο `bin`):
+
+```bash
+mysqladmin -u root -h 127.0.0.1 shutdown
+```
+
+Στα Windows, από τον φάκελο `bin`: `mysqladmin -u root shutdown`.
+
+Το παράθυρο του `mysqld --console` επιστρέφει στην προτροπή. Για να ξεκινήσει ξανά ο server, τρέχετε πάλι
+**μόνο** το `mysqld --console` (όχι το `--initialize-insecure`: αυτό γίνεται μία φορά). Οι βάσεις και τα δεδομένα
+μένουν στον φάκελο `data`.
+
+| Εγκατάσταση          | Σταμάτημα                                  | Εκκίνηση                          |
+|----------------------|--------------------------------------------|-----------------------------------|
+| ZIP / archive        | `mysqladmin -u root -h 127.0.0.1 shutdown` | `mysqld --console` στο `bin`      |
+| Linux (apt)          | `sudo systemctl stop mysql`                | `sudo systemctl start mysql`      |
+| Docker               | `docker stop studentlab-mysql`             | `docker start studentlab-mysql`   |
+
+> **Ctrl+C** στο παράθυρο του server συχνά **δεν** τον σταματά στο Linux, γιατί ο `mysqld` κατά κανόνα αγνοεί αυτό το
+> σήμα (SIGINT). Εναλλακτικά, ένα `kill <PID>` (SIGTERM) τον κλείνει κι αυτό κανονικά. **Ποτέ** `kill -9`: κόβει
+> τον server απότομα, χωρίς να προλάβει να γράψει στον δίσκο.
 
 > **MySQL στο cloud:** υπάρχουν δωρεάν MySQL βάσεις, π.χ. στο <https://console.clever-cloud.com/> ή στο
 > <https://tidbcloud.com/> (το TiDB είναι συμβατό με τη MySQL). Εκεί η βάση και ο χρήστης φτιάχνονται από τη σελίδα
