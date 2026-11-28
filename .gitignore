@@ -55,5 +55,6 @@ desktop.ini
 *~
 *.swp
 
-# ---- Έτοιμο project του lab (μέχρι το βήμα 14): στο git μπαίνει μόνο το studentlab.zip ----
+# ---- Έτοιμα projects του lab: στο git μπαίνουν μόνο τα zip ----
+# studentlab.zip: τέλος βήματος 14 (lab-form) · studentlab-step15.zip: τέλος βήματος 15 (αφετηρία του lab-db)
 studentlab/
