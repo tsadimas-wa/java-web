@@ -43,6 +43,7 @@
 - [10. Το StudentRepository με JDBC](#10-το-studentrepository-με-jdbc)
 - [11. Εκτέλεση και δοκιμή](#11-εκτέλεση-και-δοκιμή)
 - [12. Πώς δουλεύουν όλα μαζί](#12-πώς-δουλεύουν-όλα-μαζί)
+- [13. Επέκταση: connection pool με DataSource](#13-επέκταση-connection-pool-με-datasource)
 - [Συχνά προβλήματα](#συχνά-προβλήματα)
 - [Ασκήσεις](#ασκήσεις)
 
@@ -92,21 +93,7 @@ studentlab/
 Η Java μιλάει τη «γλώσσα» των **αντικειμένων** (`Student`, `List<Student>`). Η MySQL μιλάει **SQL**, και
 επικοινωνεί μέσα από το δίκτυο με ένα δικό της πρωτόκολλο. Η **JDBC** είναι ο «διερμηνέας» ανάμεσά τους.
 
-```
-   Η εφαρμογή μας (Servlets, StudentRepository)
-                    │
-                    ▼
-   JDBC API  (java.sql.*: Connection, PreparedStatement, ResultSet, ...)   ← interfaces της Java
-                    │
-                    ▼
-   DriverManager    (διαλέγει driver με βάση το URL)
-                    │
-                    ▼
-   MySQL JDBC driver (com.mysql.cj.jdbc.*)                                  ← το .jar από το Maven
-                    │   TCP, θύρα 3306
-                    ▼
-   MySQL server
-```
+![Αρχιτεκτονική JDBC: η εφαρμογή καλεί το JDBC API, ο DriverManager διαλέγει τον MySQL driver, που μιλά με τον MySQL server μέσω TCP](images/lab-db-jdbc.png)
 
 ### 1.1 Interfaces και υλοποιήσεις
 
@@ -444,16 +431,7 @@ SELECT * FROM students;
 
 **Το URL, κομμάτι‑κομμάτι:**
 
-```
-jdbc:mysql://localhost:3306/studentlab?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-└┬─┘ └─┬─┘   └───┬───┘ └┬─┘ └───┬────┘ └──────────────────────────┬─────────────────────────────┘
- │     │         │      │       │                                 └ παράμετροι του driver
- │     │         │      │       └ η βάση (CREATE DATABASE studentlab)
- │     │         │      └ η θύρα της MySQL (η PostgreSQL π.χ. ακούει στην 5432)
- │     │         └ ο υπολογιστής του MySQL server
- │     └ ποιος driver: ο DriverManager το δίνει στον MySQL driver
- └ πάντα jdbc: για τα URLs της JDBC
-```
+![Το JDBC URL κομμάτι-κομμάτι: jdbc:, mysql:, //localhost, :3306, /studentlab και οι παράμετροι του driver](images/lab-db-url.png)
 
 | Παράμετρος                     | Τι κάνει |
 |--------------------------------|----------|
@@ -472,16 +450,44 @@ jdbc:mysql://localhost:3306/studentlab?useSSL=false&allowPublicKeyRetrieval=true
 
 Σκεφτείτε τον Tomcat σαν μια **πολυκατοικία**:
 
-- κάθε web εφαρμογή (εδώ η `/studentlab`) τρέχει στο δικό της **Context**, το δικό της **διαμέρισμα**. Αν μια
-  εφαρμογή «κρασάρει» ή αλλάξει μια ρύθμιση, οι άλλες του ίδιου Tomcat δεν επηρεάζονται.
-- το **`context.xml`** είναι το **συμβόλαιο** του διαμερίσματος: γράφει τι χρειάζεται η εφαρμογή για να
-  λειτουργήσει, π.χ. τα στοιχεία της βάσης.
-- στον κώδικα, το Context της εφαρμογής το έχουμε ήδη δει ως `request.getContextPath()` (= `/studentlab`).
+- Το **Context** είναι το **διαμέρισμα** της δικής σας εφαρμογής μέσα στην πολυκατοικία. Κάθε web εφαρμογή που
+  τρέχει στον ίδιο Tomcat (εδώ η `/studentlab`, αλλά και όποια άλλη έχετε κάνει deploy) έχει το δικό της Context.
+- Αυτό εξασφαλίζει **απομόνωση**: κάθε εφαρμογή έχει τις δικές της κλάσεις, τις δικές της βιβλιοθήκες (`WEB-INF/lib`)
+  και τις δικές της ρυθμίσεις. Αν μια εφαρμογή «κρασάρει» ή αλλάξει μια ρύθμιση, οι άλλες δεν επηρεάζονται.
+- Στον κώδικα, το Context της εφαρμογής αντιπροσωπεύεται από το αντικείμενο **`ServletContext`**
+  (`getServletContext()` μέσα σε ένα Servlet). Υπάρχει **ένα** για όλη την εφαρμογή, και είναι το «περιβάλλον» μέσα
+  στο οποίο ζουν όλα τα Servlets και οι JSP της. Το όνομά του το έχουμε ήδη χρησιμοποιήσει: είναι το
+  `request.getContextPath()` (= `/studentlab`) που βάζουμε μπροστά στα redirects και στα links.
 
-**Γιατί στο `META-INF`;** Ο φάκελος `META-INF` (meta information) είναι ο τυποποιημένος φάκελος για πληροφορίες
-σχετικά με το «πακετάρισμα» της εφαρμογής. Ο Tomcat, όταν ξεκινά μια εφαρμογή, ψάχνει **ακριβώς** το
-`META-INF/context.xml` μέσα στο `.war` και φορτώνει τις ρυθμίσεις του. Επειδή το αρχείο είναι μέσα στο project,
-«ταξιδεύει» μαζί με το `.war`.
+**Γιατί φτιάχνουμε το `context.xml`;** Αν το Context είναι το διαμέρισμα, το **`context.xml`** είναι το **συμβόλαιο
+μίσθωσης**: γράφει τους ειδικούς όρους και τις «παροχές» που χρειάζεται η εφαρμογή για να λειτουργήσει. Εδώ οι
+παροχές είναι τα στοιχεία σύνδεσης με τη βάση, ως **μεταβλητές περιβάλλοντος** (`<Environment>`). Τα κερδίζουμε
+όσα είπαμε στην αρχή της ενότητας: ο κωδικός δεν είναι στον κώδικα, αλλάζει χωρίς compile, και η Java τον βρίσκει
+μέσω **JNDI** (7.3).
+
+**Γιατί στο `META-INF`;** Ο φάκελος `META-INF` (meta information) είναι ο τυποποιημένος φάκελος της Java για
+πληροφορίες σχετικά με το «πακετάρισμα» της εφαρμογής. Βάζοντας το αρχείο στο `src/main/webapp/META-INF/` (στο
+`.war` καταλήγει στο `META-INF/context.xml`):
+
+1. **Φορητότητα:** το αρχείο «ταξιδεύει» μαζί με την εφαρμογή. Όταν δώσετε το `.war` σε κάποιον άλλον ή το
+   ανεβάσετε σε έναν server, οι ρυθμίσεις πάνε μαζί του.
+2. **Αυτόματη αναγνώριση:** ο Tomcat είναι προγραμματισμένος να κοιτάει **ακριβώς** σε αυτό το σημείο όταν ξεκινά
+   την εφαρμογή. Αν βρει το αρχείο, φορτώνει αυτόματα τις ρυθμίσεις του.
+
+Συνοπτικά, το `context.xml` στο `META-INF` είναι ο τρόπος να πούμε στον Tomcat: *«Όταν τρέξεις αυτή την εφαρμογή,
+φόρτωσε αυτές τις ρυθμίσεις σύνδεσης, ώστε ο κώδικας Java να μπορεί να τις βρει όταν τις χρειαστεί.»*
+
+> **Πού αλλού διαβάζει ο Tomcat ρυθμίσεις Context;** Εκτός από το `META-INF/context.xml` της εφαρμογής, υπάρχουν:
+>
+> - το **`conf/context.xml`** του Tomcat: ρυθμίσεις για **όλες** τις εφαρμογές του,
+> - ένα αρχείο **`conf/Catalina/localhost/studentlab.xml`**: ρυθμίσεις μόνο για την εφαρμογή `studentlab`. Αν υπάρχει,
+>   ο Tomcat χρησιμοποιεί **αυτό** και **αγνοεί** το `META-INF/context.xml` της εφαρμογής.
+>
+> Το δεύτερο το φτιάχνει το **NetBeans**: όταν πατάτε **Run**, αντιγράφει εκεί το περιεχόμενο του
+> `META-INF/context.xml` σας και προσθέτει ένα `docBase` που δείχνει στον φάκελο `target/` του project. Γι' αυτό, μετά
+> από αλλαγή στο `context.xml`, χρειάζεται νέο **Run** (ή **Clean and Build** και Run): αλλιώς ο Tomcat διαβάζει ακόμα
+> το παλιό αντίγραφο. Σε πραγματικό server, οι κωδικοί συχνά μπαίνουν σε αυτά τα αρχεία του `conf/` και όχι στο `.war`,
+> ώστε να μη βρίσκονται μέσα στο project.
 
 ### 7.3 Τι είναι το JNDI
 
@@ -581,7 +587,8 @@ public class DatabaseConnection {
 > κλήση του repository, που για ένα εργαστήριο είναι μια χαρά. Οι πραγματικές εφαρμογές χρησιμοποιούν ένα
 > **connection pool**: ένα «απόθεμα» από ανοιχτές συνδέσεις που ξαναχρησιμοποιούνται. Ο Tomcat έχει έτοιμο pool:
 > δηλώνεται στο ίδιο `context.xml` με ένα `<Resource type="javax.sql.DataSource" .../>`, και ο κώδικας κάνει
-> `lookup` ένα `DataSource` αντί για τρία `String`. Δείτε την [άσκηση 5](#ασκήσεις).
+> `lookup` ένα `DataSource` αντί για τρία `String`. Αυτός είναι ο **ενδεδειγμένος** τρόπος σε Tomcat, και τον φτιάχνουμε
+> στην [ενότητα 13](#13-επέκταση-connection-pool-με-datasource), αφού δουλέψει πρώτα η απλή εκδοχή.
 
 ---
 
@@ -995,31 +1002,7 @@ SQL, διπλό primary key κ.λπ. Το `SQLException` είναι **checked** 
 
 Τι γίνεται όταν ο χρήστης ανοίγει τη λίστα φοιτητών:
 
-```
- Browser                Tomcat / εφαρμογή                                         MySQL
-    │
-    │  GET /studentlab/students
-    ├──────────────▶ StudentListController.doGet()
-    │                    │
-    │                    │ StudentRepository.findAll()
-    │                    ▼
-    │                StudentRepository
-    │                    │ DatabaseConnection.getConnection()
-    │                    │    ├─ JNDI: java:comp/env → DB_URL, DB_USER, DB_PASSWORD (context.xml)
-    │                    │    └─ DriverManager.getConnection(...) ──── TCP :3306, login ──────▶│
-    │                    │                                                                      │
-    │                    │ prepareStatement("SELECT ... ORDER BY am") + executeQuery() ────────▶│
-    │                    │◀─────────────────────────────────────────── γραμμές (ResultSet) ─────│
-    │                    │ while (rs.next()) → new Student(...) → List<Student>
-    │                    │ close(): ResultSet, PreparedStatement, Connection
-    │                    ▼
-    │                StudentListController
-    │                    │ request.setAttribute("students", list)
-    │                    │ forward → student-list.jsp
-    │                    ▼
-    │                student-list.jsp  (<c:forEach> → <table>)
-    │◀─────────────── HTML
-```
+![Ροή του GET /students: controller, repository, DatabaseConnection (JNDI και DriverManager), SELECT στη MySQL, List<Student>, forward στη JSP](images/lab-db-flow.png)
 
 Και με την αναλογία του **εστιατορίου**, το MVC της εφαρμογής:
 
@@ -1034,6 +1017,196 @@ SQL, διπλό primary key κ.λπ. Το `SQLException` είναι **checked** 
 
 Ο σερβιτόρος δεν μπαίνει στην αποθήκη, και ο μάγειρας δεν μιλά με τον πελάτη. Γι' αυτό, όταν αλλάξαμε αποθήκη (από
 λίστα στη μνήμη σε MySQL), άλλαξε μόνο η δουλειά του μάγειρα.
+
+---
+
+## 13. Επέκταση: connection pool με DataSource
+
+Η εφαρμογή δουλεύει, αλλά ο τρόπος που **ανοίγει** συνδέσεις (ενότητα 8) είναι κατάλληλος για εργαστήριο και όχι
+για πραγματική εφαρμογή. Εδώ τον αλλάζουμε στον **ενδεδειγμένο** τρόπο για Tomcat: ένα **connection pool** που το
+διαχειρίζεται ο ίδιος ο Tomcat και που η εφαρμογή το βρίσκει μέσω JNDI ως **`DataSource`**.
+
+### 13.1 Τι δεν πάει καλά με τον DriverManager
+
+1. **Κάθε κλήση ανοίγει νέα σύνδεση.** Σύνδεση TCP, login στη MySQL, μία εντολή SQL, κλείσιμο. Μια καταχώρηση
+   φοιτητή ανοίγει **δύο** συνδέσεις (`findByAm` και `save`). Το άνοιγμα συχνά κοστίζει περισσότερο από την ίδια την
+   εντολή SQL.
+2. **Δεν υπάρχει όριο.** Αν έρθουν 500 requests μαζί, ανοίγουν 500 συνδέσεις, και η MySQL (που δέχεται εξ ορισμού
+   151) αρνείται τις υπόλοιπες με `Too many connections`.
+3. **Κάθε `getConnection()` ξανακάνει όλη τη δουλειά:** `Class.forName` και τρία JNDI lookups.
+4. **Ο driver φορτώνεται από την εφαρμογή.** Γράφεται στον `DriverManager`, που ανήκει σε όλη τη JVM και όχι στην
+   εφαρμογή. Όταν η εφαρμογή σταματά (Stop, νέο deploy), ο Tomcat βγάζει στο log προειδοποιήσεις όπως
+   `registered the JDBC driver [com.mysql.cj.jdbc.Driver] but failed to unregister it` και
+   `appears to have started a thread named [mysql-cj-abandoned-connection-cleanup]`: η παλιά εφαρμογή δεν μπορεί να
+   φύγει εντελώς από τη μνήμη (memory leak).
+
+### 13.2 Τι είναι το connection pool
+
+Ένα **pool** είναι ένα «απόθεμα» από **ανοιχτές** συνδέσεις, όπως τα ποδήλατα ενός σταθμού κοινόχρηστων ποδηλάτων:
+
+- όταν η εφαρμογή θέλει σύνδεση, **δανείζεται** μια ανοιχτή από το pool, χωρίς νέο TCP και login,
+- όταν τελειώσει, το **`close()` δεν κλείνει** τη σύνδεση· την **επιστρέφει** στο pool για το επόμενο request,
+- το pool ανοίγει συνδέσεις μόνο όταν χρειάζεται, και **ποτέ περισσότερες** από ένα όριο. Αν όλες είναι δανεισμένες,
+  το επόμενο request **περιμένει** να επιστραφεί κάποια, αντί να φορτώσει τη βάση.
+
+Το pool το βλέπουμε μέσα από το interface **`javax.sql.DataSource`**, που έχει μία βασική μέθοδο:
+`getConnection()`. Επειδή επιστρέφει κι αυτή ένα `Connection`, ο κώδικας του repository **δεν αλλάζει καθόλου**.
+Αλλάζουν τρία πράγματα: το `context.xml`, η `DatabaseConnection` και η θέση του driver.
+
+### 13.3 Ο driver πηγαίνει στον Tomcat
+
+Το pool το φτιάχνει ο **Tomcat**, πριν ξεκινήσει η εφαρμογή, οπότε ο Tomcat πρέπει να «βλέπει» τον driver. Η
+τεκμηρίωση του Tomcat ζητά το `.jar` του driver στον φάκελο **`lib/`** του Tomcat, όχι μέσα στο `.war`.
+
+1. **Σταματήστε** τον Tomcat (**Services → Servers** → δεξί κλικ → **Stop**).
+2. Αντιγράψτε το `mysql-connector-j-8.4.0.jar` στον φάκελο `lib` του Tomcat, π.χ. στο
+   `~/opt/apache-tomcat-11.0.x/lib/`. Το `.jar` το έχει ήδη κατεβάσει το Maven στο
+   `~/.m2/repository/com/mysql/mysql-connector-j/8.4.0/` (δείτε την [ενότητα 5](#5-η-βάση-μέσα-από-το-netbeans-προαιρετικό)).
+3. Στο `pom.xml`, κάντε τη dependency του driver **`provided`**: τη χρειαζόμαστε πλέον μόνο για το compile, γιατί στο
+   runtime τη δίνει ο Tomcat (όπως το `jakarta.servlet-api`):
+
+   **Αρχείο:** `pom.xml`
+
+   ```xml
+       <!-- MySQL JDBC driver: provided, γιατί είναι πλέον στο lib/ του Tomcat -->
+       <dependency>
+         <groupId>com.mysql</groupId>
+         <artifactId>mysql-connector-j</artifactId>
+         <version>8.4.0</version>
+         <scope>provided</scope>
+       </dependency>
+   ```
+
+Ο φάκελος `lib/` διαβάζεται μόνο όταν **ξεκινά** ο Tomcat. Αν αντιγράψετε το `.jar` ενώ τρέχει, κάντε τον restart.
+
+> Ο driver δεν πρέπει να είναι **και** στο `lib/` του Tomcat **και** στο `.war`: δύο αντίγραφα της ίδιας κλάσης σε
+> διαφορετικούς classloaders δίνουν δυσνόητα λάθη. Γι' αυτό το `provided`.
+
+### 13.4 Το pool στο context.xml
+
+Αντικαταστήστε τα τρία `<Environment>` με ένα **`<Resource>`**:
+
+**Αρχείο:** `src/main/webapp/META-INF/context.xml`
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<Context path="/studentlab">
+
+    <!-- Ένα pool συνδέσεων, που το φτιάχνει ο Tomcat και το βρίσκουμε στο JNDI ως jdbc/studentlab -->
+    <Resource name="jdbc/studentlab" auth="Container" type="javax.sql.DataSource"
+              driverClassName="com.mysql.cj.jdbc.Driver"
+              url="jdbc:mysql://localhost:3306/studentlab?useSSL=false&amp;allowPublicKeyRetrieval=true&amp;serverTimezone=UTC"
+              username="studentlab" password="studentlab123"
+              maxTotal="10" maxIdle="5" maxWaitMillis="10000"/>
+
+</Context>
+```
+
+| Attribute                  | Τι σημαίνει |
+|----------------------------|-------------|
+| `name="jdbc/studentlab"`   | το όνομα στο JNDI. Κατά σύμβαση, τα `DataSource` μπαίνουν κάτω από το `jdbc/`. |
+| `auth="Container"`         | τη σύνδεση στη βάση (με `username` / `password`) την κάνει ο Tomcat, όχι ο κώδικας. |
+| `type="javax.sql.DataSource"` | τι αντικείμενο θα πάρει η εφαρμογή με το `lookup`. |
+| `driverClassName`          | η κλάση του driver, η ίδια που γράφαμε στο `Class.forName`. Τη φορτώνει πλέον ο Tomcat. |
+| `url`, `username`, `password` | ό,τι είχαμε στα τρία `<Environment>`. **Προσοχή:** εδώ λέγεται `username`, όχι `user`. |
+| `maxTotal="10"`            | το πολύ 10 ανοιχτές συνδέσεις, όσα requests κι αν έρθουν. |
+| `maxIdle="5"`              | το πολύ 5 συνδέσεις μένουν ανοιχτές χωρίς δουλειά· όσες περισσεύουν κλείνουν. |
+| `maxWaitMillis="10000"`    | αν και οι 10 είναι δανεισμένες, ένα request περιμένει έως 10 δευτερόλεπτα· μετά παίρνει `SQLException`. |
+
+Οι τιμές `10` / `5` είναι για εργαστήριο. Σε πραγματική εφαρμογή ρυθμίζονται ανάλογα με τον φόρτο και με το πόσες
+συνδέσεις δέχεται η βάση.
+
+### 13.5 Η DatabaseConnection με DataSource
+
+Αντικαταστήστε **όλη** την `DatabaseConnection`:
+
+**Αρχείο:** `src/main/java/gr/uniwa/ice/studentlab/repository/DatabaseConnection.java`
+
+```java
+package gr.uniwa.ice.studentlab.repository;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.sql.DataSource;
+
+public class DatabaseConnection {
+
+    // Το pool του Tomcat. Το βρίσκουμε μία φορά (την πρώτη) και το κρατάμε.
+    private static DataSource dataSource;
+
+    // «Δανείζεται» μια σύνδεση από το pool. Το close() την επιστρέφει στο pool.
+    public static Connection getConnection() throws SQLException {
+        return getDataSource().getConnection();
+    }
+
+    private static synchronized DataSource getDataSource() throws SQLException {
+        if (dataSource == null) {
+            try {
+                dataSource = (DataSource) new InitialContext().lookup("java:comp/env/jdbc/studentlab");
+            } catch (NamingException e) {
+                throw new SQLException("Δεν βρέθηκε το DataSource jdbc/studentlab στο context.xml", e);
+            }
+        }
+        return dataSource;
+    }
+}
+```
+
+**Τι άλλαξε:**
+
+- **Ούτε `Class.forName` ούτε `DriverManager`.** Τον driver τον φορτώνει ο Tomcat, και τη σύνδεση την ανοίγει το pool.
+- **Ένα lookup αντί για τρία, και μόνο την πρώτη φορά.** Το `"java:comp/env/jdbc/studentlab"` είναι ο ίδιος δρόμος με
+  πριν (`lookup("java:comp/env")` και μετά `lookup("jdbc/studentlab")`), γραμμένος σε μία κλήση. Το `DataSource`
+  κρατιέται σε ένα `static` πεδίο, οπότε οι επόμενες κλήσεις το βρίσκουν έτοιμο.
+- **`synchronized`** στη `getDataSource()`: τα πρώτα requests μπορεί να έρθουν ταυτόχρονα, και το `if
+  (dataSource == null)` πρέπει να το ελέγχει ένα νήμα τη φορά. Εδώ το `synchronized` είναι φθηνό: προστατεύει μόνο
+  ένα lookup, όχι τη δουλειά με τη βάση.
+- Η **υπογραφή** της `getConnection()` **έμεινε ίδια** (`public static Connection getConnection() throws
+  SQLException`). Γι' αυτό το `StudentRepository` και ο `DbTestController` δεν αλλάζουν ούτε γραμμή, και το
+  try‑with‑resources τους τώρα **επιστρέφει** τις συνδέσεις στο pool αντί να τις κλείνει.
+
+Το ίδιο σχήμα ξαναβλέπουμε: άλλαξε ο τρόπος που ανοίγουν οι συνδέσεις, και άλλαξε **μόνο** η κλάση που είναι
+υπεύθυνη για αυτό.
+
+> **Αν ξεχάσετε ένα `close()`**, με τον `DriverManager` η σύνδεση έμενε ανοιχτή μέχρι να την κλείσει η MySQL. Με το
+> pool είναι χειρότερα: η σύνδεση **δεν επιστρέφεται ποτέ**. Μετά από 10 τέτοια requests το pool είναι άδειο, και κάθε
+> επόμενο request περιμένει 10 δευτερόλεπτα και αποτυγχάνει. Γι' αυτό το try‑with‑resources (10.2) είναι υποχρεωτικό.
+
+### 13.6 Δοκιμή
+
+1. Βεβαιωθείτε ότι το `.jar` είναι στο `lib/` του Tomcat, και κάντε **Clean and Build** και **Run** (ο Tomcat πρέπει
+   να ξεκινήσει από την αρχή, βλ. 13.3).
+2. Ανοίξτε <http://localhost:8080/studentlab/testdb>: «Επιτυχία!», όπως πριν. Αν δεν τον έχετε σβήσει, προσθέστε
+   προσωρινά στον `DbTestController` τη γραμμή
+
+   ```java
+   out.println("<p>Κλάση σύνδεσης: " + conn.getClass().getName() + "</p>");
+   ```
+
+   Πριν από το pool έδειχνε μια κλάση της MySQL (`com.mysql.cj.jdbc.ConnectionImpl`). Τώρα δείχνει μια κλάση του pool
+   του Tomcat (`org.apache.tomcat.dbcp...`): ένα «περιτύλιγμα» γύρω από τη σύνδεση της MySQL, του οποίου το `close()`
+   την επιστρέφει στο pool.
+3. Κάντε όλες τις δοκιμές της [ενότητας 11](#11-εκτέλεση-και-δοκιμή) (καταχώρηση, προβολή, επεξεργασία, διαγραφή).
+   Δουλεύουν όπως πριν.
+4. **Δείτε το pool από την πλευρά της MySQL.** Ανοίξτε τη λίστα φοιτητών 20 φορές (refresh) και τρέξτε ως `root`:
+
+   ```sql
+   SELECT ID, USER, HOST, COMMAND, TIME
+   FROM information_schema.PROCESSLIST
+   WHERE USER = 'studentlab';
+   ```
+
+   Βλέπετε μία ή δύο συνδέσεις σε κατάσταση `Sleep`: οι **ίδιες** συνδέσεις εξυπηρέτησαν και τα 20 requests, και
+   μένουν ανοιχτές για τα επόμενα. Με τον `DriverManager`, μετά τα requests δεν έμενε καμία σύνδεση της εφαρμογής
+   (ό,τι βλέπετε τότε στη λίστα είναι π.χ. η σύνδεση του NetBeans της ενότητας 5).
+5. Σταματήστε τον Tomcat και δείτε το **Output**: οι προειδοποιήσεις για τον JDBC driver και το νήμα
+   `mysql-cj-abandoned-connection-cleanup` (13.1) δεν εμφανίζονται πια.
+
+> **Και χωρίς Tomcat;** Σε εφαρμογές που δεν τρέχουν σε Tomcat (ή όταν θέλουμε το pool μέσα στην εφαρμογή), η πιο
+> διαδεδομένη βιβλιοθήκη pool είναι το **HikariCP**. Είναι κι αυτό ένα `DataSource`, οπότε ο υπόλοιπος κώδικας μένει
+> ίδιος. Το Spring Boot, για παράδειγμα, το χρησιμοποιεί εξ ορισμού.
 
 ---
 
@@ -1058,7 +1231,12 @@ SQL, διπλό primary key κ.λπ. Το `SQLException` είναι **checked** 
 | `Too many connections` | Κάπου ανοίγει `Connection` χωρίς να κλείνει. Κάθε `getConnection()` πρέπει να είναι μέσα σε `try (...)` (10.2). |
 | Τα ελληνικά αποθηκεύονται ως `???` ή βγαίνει `Incorrect string value` | Η βάση ή ο πίνακας δεν είναι `utf8mb4`. Ξαναφτιάξτε τη βάση με το `CHARACTER SET utf8mb4` του βήματος 3. |
 | `incompatible types: javax.naming.Context ...` ή άγνωστες μέθοδοι στο `Context` | Λάθος `import`. Πρέπει να είναι `import javax.naming.Context;`. |
-| Στο Output, κατά το Stop/Redeploy: `...appears to have started a thread named [mysql-cj-abandoned-connection-cleanup]...` | Προειδοποίηση του Tomcat για ένα νήμα του MySQL driver. Δεν επηρεάζει τη λειτουργία της εφαρμογής στο εργαστήριο. |
+| Στο Output, κατά το Stop/Redeploy: `...appears to have started a thread named [mysql-cj-abandoned-connection-cleanup]...` | Προειδοποίηση του Tomcat: ο driver φορτώθηκε από την εφαρμογή (μαζί με ένα `registered the JDBC driver ... but failed to unregister it`). Δεν επηρεάζει τη λειτουργία της εφαρμογής στο εργαστήριο· με το pool του [βήματος 13](#13-επέκταση-connection-pool-με-datasource) δεν εμφανίζεται. |
+| (Βήμα 13) `ClassNotFoundException: com.mysql.cj.jdbc.Driver` στη δημιουργία του pool, ή `Cannot load JDBC driver class` | Το `.jar` του driver δεν είναι στο `lib/` του Tomcat, ή μπήκε εκεί ενώ ο Tomcat έτρεχε. Σταματήστε τον Tomcat, ελέγξτε τον φάκελο και ξεκινήστε τον ξανά. |
+| (Βήμα 13) `Cannot create JDBC driver of class '' for connect URL 'null'` | Το pool δημιουργήθηκε χωρίς τα attributes του: λάθος στο `<Resource>` (π.χ. `driverClassName` ή `url` γραμμένα αλλιώς). |
+| (Βήμα 13) `Cannot create PoolableConnectionFactory (Access denied for user '...'@'localhost')`, με το όνομα του **δικού σας λογαριασμού** στον υπολογιστή αντί για `studentlab` | Στο `<Resource>` γράψατε `user="..."` αντί για `username="..."`. Ο Tomcat αγνοεί το `user`, και ο driver στέλνει το όνομα του χρήστη του λειτουργικού. |
+| (Βήμα 13) `Δεν βρέθηκε το DataSource jdbc/studentlab` | Το `name` του `<Resource>` δεν είναι ακριβώς `jdbc/studentlab`, ή ο Tomcat δεν ξαναδιάβασε το `context.xml` (Clean and Build + Run). |
+| (Βήμα 13) Τα requests «κολλάνε» για 10 δευτερόλεπτα και μετά: `Cannot get a connection, pool error Timeout waiting for idle object` | Το pool άδειασε: κάπου μια σύνδεση δεν κλείνει, οπότε δεν επιστρέφεται ποτέ. Ελέγξτε ότι **κάθε** `getConnection()` είναι μέσα σε `try (...)`. |
 
 ---
 
@@ -1080,20 +1258,18 @@ SQL, διπλό primary key κ.λπ. Το `SQLException` είναι **checked** 
 4. **Μοναδικό email.** Λύστε την [άσκηση 2 του lab-form](lab-form.md#ασκήσεις) (δύο φοιτητές δεν έχουν το ίδιο
    email) με δύο τρόπους: (α) με μια `existsByEmail` στο repository, (β) στη βάση, με
    `ALTER TABLE students ADD CONSTRAINT uq_students_email UNIQUE (email);`. Τι γίνεται αν κάνετε μόνο το (β);
-5. **Connection pool.** Αντί για τα τρία `<Environment>`, δηλώστε στο `context.xml` ένα pool συνδέσεων του Tomcat:
+5. **(Μετά το βήμα 13) Ένα pool που αδειάζει.** Στο `context.xml` βάλτε `maxTotal="2"` και `maxWaitMillis="3000"`.
+   Στη `findAll` του `StudentRepository`, βγάλτε **προσωρινά** τη σύνδεση από το try‑with‑resources, ώστε να μην
+   κλείνει ποτέ:
 
-   ```xml
-   <Resource name="jdbc/studentlab" auth="Container" type="javax.sql.DataSource"
-             driverClassName="com.mysql.cj.jdbc.Driver"
-             url="jdbc:mysql://localhost:3306/studentlab?useSSL=false&amp;allowPublicKeyRetrieval=true&amp;serverTimezone=UTC"
-             username="studentlab" password="studentlab123"
-             maxTotal="10" maxIdle="5"/>
+   ```java
+   Connection conn = DatabaseConnection.getConnection();   // ΛΑΘΟΣ: δεν επιστρέφεται στο pool
+   try (PreparedStatement ps = conn.prepareStatement(sql);
+        ResultSet rs = ps.executeQuery()) {
    ```
 
-   και αλλάξτε τη `getConnection()` ώστε να κάνει `lookup("jdbc/studentlab")`, να το μετατρέπει σε
-   `javax.sql.DataSource` και να επιστρέφει `dataSource.getConnection()`. Ποια κλάση πρέπει να αλλάξει, και ποιες
-   **όχι**; (Προσοχή: εδώ ο driver τον φορτώνει ο Tomcat, οπότε το `.jar` του πρέπει να μπει στο `lib/` του Tomcat
-   και η dependency στο `pom.xml` να γίνει `<scope>provided</scope>`.)
+   Ανοίξτε τη λίστα φοιτητών τρεις φορές. Τι γίνεται στην τρίτη, και γιατί αργεί 3 δευτερόλεπτα; Τι λέει το
+   `Caused by` στο Output; Τι δείχνει το `PROCESSLIST` της 13.6; Επαναφέρετε τον κώδικα και τις τιμές όταν τελειώσετε.
 6. **Ημερομηνία καταχώρησης.** Προσθέστε στον πίνακα μια στήλη
    `created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP` (με `ALTER TABLE`). Το `INSERT` **δεν** αλλάζει, γιατί την τιμή
    τη βάζει η ίδια η βάση. Προσθέστε στη `Student` ένα πεδίο `java.time.LocalDateTime createdAt` και έναν **δεύτερο**
